@@ -11,6 +11,9 @@ import numpy as np
 import os
 import pandas as pd
 
+import time
+import random
+
 
 
 ''' 
@@ -84,7 +87,7 @@ class Donnees :     # classe qui recenses les données du problème
         self.missions = self.missions.rename(columns={3: 'heure_fin'})
         self.missions = self.missions.rename(columns={4: 'compétence'})
         self.missions = self.missions.rename(columns={5: 'spécialité'})
-        #print(f"Missions : \n\n {self.missions} \n \n")
+        print(f"Missions : \n\n {self.missions} \n \n")
 
 
     def traitement_donnees(self):
@@ -101,8 +104,8 @@ class Donnees :     # classe qui recenses les données du problème
         print(print(f"Nombre de Spécialité de chaque centre : \n\n {self.counts_specialite} \n\n"))
 
         # quelques tests d'accès aux données des tableaux
-        print(f'test = {self.counts_specialite.iat[0,1]}')
-        print(f'test = {self.missions.iat[0,5]}')   #renvoie musique
+        #print(f'test nombre de spécialité mécanique au centre 2  = {self.counts_specialite.iloc[1,1]} {self.counts_specialite.iat[1,1]}')
+        #print(f'test = {self.missions.iat[0,5]}')   #renvoie musique
 
         #print(centers_Employees.groupby(['compétence','nom']).value_counts())   # affiche qui possèdent des compétences LPC et LSF pour les centre
         #print(centers_Employees["compétence"].value_counts())               # compte le nombre d'employé ayant les compétences LSF et LPC total de tous les centres (sans distinction des centres)
@@ -111,9 +114,31 @@ class Donnees :     # classe qui recenses les données du problème
             
 
 
+current_time = int(time.time())
+random.seed(current_time)
 
-test = Donnees()
-test.traitement_donnees()
+donnees = Donnees()
+donnees.traitement_donnees()
+print(donnees.missions)
+print(donnees.employees)
+# print(donnees.missions.shape[0]) # nb de ligne du tableau mission
 
+def build_population_initial(donnees):
+    population_initiale = []    # liste de solution
+    solution = []               # une solution est une liste d'affectation
+    affectation = []            # liste contenant les informations d'une affectation de mission sous la forme [id_mission,id_centre,id_employee, date, heure d’arrivé, heure de départ , lieu de de départ,coût des distances, spécialité de l’employé]
+                                # ou date = {1,2...,5}
 
+    for i in range(donnees.missions.shape[0]): #parcours le tableau mission ligne par ligne
+        competence_mission = donnees.missions.iat[i,4] # accès à la compétence de la mission à la ligne i
+        index_employee_aleatoire = random.randint(1,donnees.employees.shape[0])     # choix d'un id d'employé aléatoire
 
+        while donnees.employees.iat[index_employee_aleatoire,2] != competence_mission :     # temps que l'employé tiré au hasard n'a pas la bonne compétence on recommence
+            index_employee_aleatoire = random.randint(1,donnees.employees.shape[0])
+
+        # vérification que l'employé peut se voir assigner la mission 
+        # CREER UN TABLEAU AVEC LES CONTRAINTES DES EMPLOYEES POUR CHAQUES SOLUTION DIFFERENTE?
+        '''     
+        for j in range (len(solution)):     # parcours la liste des solution contenant les différentes affectations
+            if solution[j][2] == index_employee_aleatoire :       # on regarde si l'employée de la j ieme affectation de la liste correspond aux critères plus bas
+        '''        
