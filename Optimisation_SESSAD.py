@@ -42,10 +42,9 @@ class Population :      # population composé d'ensemble de solution
 
         for k in range(self.nb_individu):         # création de nb_individu solution initiale
             solution = []               # une solution est une liste d'affectation
+            planning_employee = Employee(donnees.employees)                   # pour chaque solution ou choromosome un planning des employee y est associé
             for i in range(donnees.missions.shape[0]): #parcours le tableau mission ligne par ligne
                 affectation = []            # liste contenant les informations d'une affectation de mission sous la forme [id_employe,mission]
-
-                planning_employee = Employee(donnees.employees)                   # pour chaque solution ou choromosome un planning des employee y est associé
 
                 index_employee_aleatoire = (random.randint(1,donnees.employees.shape[0])  - 1)   # choix d'un id d'employé aléatoire
                 competence_mission = donnees.missions.iat[i,4] # accès à la compétence de la mission à la ligne i
@@ -55,11 +54,11 @@ class Population :      # population composé d'ensemble de solution
                 
                 mission_affecter = planning_employee.est_disponible(index_employee_aleatoire,donnees.missions.iloc[i])     # ligne du tableau de la mission i passée en paramètre
                 if(mission_affecter):   # si la mission est affecter alors on l'ajoute dans la liste affectation
-                    affectation.append(index_employee_aleatoire)
+                    affectation.append(index_employee_aleatoire+1)  # +1 pour avoir l'id_employé comme dans le jeu de donnée
                     affectation.append(donnees.missions.iloc[i]) 
                     solution.append(affectation)        # le choromosome apprend l'affectation 
                 else:
-                    print(f"mission {donnees.missions.iat[i,0]} non affecté")
+                    print(f"mission {donnees.missions.iat[i,0]} non affecté (planning correspondant une ligne au dessus) \n")
 
             solution.append(planning_employee)          # le planning des employés associé à la solution est ajouté en fin de liste 
             self.population.append(solution)
@@ -69,8 +68,9 @@ class Population :      # population composé d'ensemble de solution
         
         for i in range(len(self.population)):
             #print(self.population[i])
-            print("\n\n\n")
             #print(f"planning_employé = {self.population[i][-1]}")
+            self.population[i][-1].affichage_planning()
+            print("\n\n\n")
             for j in range(len(self.population[i])-1):
                 print(f"id_employe = {self.population[i][j][0]} effectue la mission  : id = {self.population[i][j][1][0]} , jour = {self.population[i][j][1][1]} , heure_debut = {self.population[i][j][1][2]} , heure_fin = {self.population[i][j][1][3]}")
         
@@ -84,7 +84,7 @@ class Employee :    # classe qui gère les contraintes des employées
 
         # les missions peuvent commencer au plus tot à 8h du matin et finir à 18h du soir
         self.nb_jour_semaine = 5
-        self.decoupage_horaire = int(60 / 6)                                  # chaque heure est découpe en 6 intervalle de 00 minute
+        self.decoupage_horaire = int(60 / 10)                                  # chaque heure est découpe en 6 intervalle de 10 minute
         self.amplitude_horaire_max_employee = 13*self.decoupage_horaire  # 13 = amplitude horaire max , il y a entre 7h et 20h qu'un employé peut avoir une mission, 1 heure est découpé en 6 intervalle de 10 minute
         self.nb_employee = employee.shape[0]
 
@@ -100,24 +100,64 @@ class Employee :    # classe qui gère les contraintes des employées
         nb_intervalle_temps_a_verifier = int((mission[3] - mission[2]) / self.decoupage_horaire)    # nombre d'intervalle de temps, c'est à dire de case à vérifier
         index_time =  int((mission[2] - 420) / self.decoupage_horaire)                               #indice à partir du quelle la liste va commencer a être parcouru
 
+        print(f"index time = {index_time} , heure_début_mission = {mission[2]} , heure_fin = {mission[3]} , nb_intervalle = {nb_intervalle_temps_a_verifier} ")
+
+        ### 
+        #   Vérification que l'employé est disponible sur la plage horaire de la mission , 
+        #   les contraintes qui ont le plus de chances de ne pas être respecté sont vérifié en premier pour éviter les calculs inutiles
+        ###
+
         # premier parcours de l'horaire correspondant à la mission pour voir si l'employé est disponible 
         for i in range(nb_intervalle_temps_a_verifier):
             if (self.employee_horaire[id_employee][mission[1]-1][index_time] == 1):                 # si un dans l'intervalle une case vaut 1 alors l'employé n'est pas disponible , mission[1] = date 
-                    print("TEST")
+                    print(f"planning de l'employé pour qui la mission n'est pas affectée à cause qu'une autre mission chevauche une autre sur cette plage horaire = {self.employee_horaire[id_employee][mission[1]-1]}")
                     return False
                     #break                                                                       # l'employee est indisponible sur une tranche horaire couvrant la mission
             index_time +=  1
 
-        # on rentre dans cette boucle si l'employé est bien disponible, dans ce cas on actualise son planning
-        index_time =  int((mission[2] - 420) / self.decoupage_horaire)
+        ###
+        # Vérification que l'employé ne dépasse pas 7h/j 
+        ###
+        somme_horaire_par_jour = 0
+        for i in range(self.amplitude_horaire_max_employee):        # parcours d'une journée
+            if (self.employee_horaire[id_employee][mission[1]-1][i] == 1):
+                somme_horaire_par_jour += 1
+            if( (somme_horaire_par_jour*10 + nb_intervalle_temps_a_verifier*10) >= 420):    # vérifie que la somme des heures déjà travailler + celle de la mission qui pourrait être ajouté ne dépasse pas 7h
+                print(f"planning de l'employé pour qui la mission n'est pas affectée car >7h/jour max = {self.employee_horaire[id_employee][mission[1]-1]}")
+                return False
+            
+        ###
+        # Vérification que l'employé ne dépasse pas 35h/semaine
+        ###
+        somme_horaire_par_semaine = somme_horaire_par_jour      # on ne recalcule pas la somme des heures du jour déjà calculé précèdement
+        for i in range(self.nb_jour_semaine):
+            if (i!= mission[1]-1):                              # on vérifie que le jour en question n'est pas celui de la mission associé qui est déjà calculé
+                for j in range(self.amplitude_horaire_max_employee):        # parcours d'une journée
+                    if (self.employee_horaire[id_employee][i][j] == 1):
+                        somme_horaire_par_semaine += 1
+            if( (somme_horaire_par_semaine*10 + nb_intervalle_temps_a_verifier*10) >= 420*self.nb_jour_semaine):    # vérifie que la somme des heures déjà travailler + celle de la mission qui pourrait être ajouté ne dépasse pas 35h
+                        print(f"planning de l'employé pour qui la mission n'est pas affectée car >35h/jour max = {self.employee_horaire[id_employee][mission[1]-1]}")
+                        return False
+
+        # on rentre dans cette boucle si l'employé est bien disponible et que toutes les contraintes sont respectés, dans ce cas on actualise son planning
+        index_time =  int((mission[2] - 420) / self.decoupage_horaire) 
+        #print(f"index time = {index_time} , heure_début = {mission[2]} , nb_intervalle = {nb_intervalle_temps_a_verifier} ")
         for i in range(nb_intervalle_temps_a_verifier):
             self.employee_horaire[id_employee][mission[1]-1][index_time] = 1                 # si un dans l'intervalle une case vaut 1 alors l'employé n'est pas disponible , mission[1] = date 
             index_time +=  1
 
-        print(self.employee_horaire[id_employee][mission[1]-1])
+
+
+        print(f"planning de l'employé mis à jour à qui la mission vient d'etre affectée = {self.employee_horaire[id_employee][mission[1]-1]}")
         print("\n\n")
         return True
+    
 
+    def affichage_planning(self):
+        for i in range(self.nb_employee):
+            for j in range(self.nb_jour_semaine):
+                print(f" planning de l'id_employé = {i+1} au jour {j+1} = {self.employee_horaire[i][j]} \n")            # i+1 pour être raccord avec les id et jour des données 
+                print(f"{len(self.employee_horaire[i][j])}")
 
 
 class Donnees :     # classe qui recenses les données du problème
@@ -221,31 +261,5 @@ print(f"affectation competence= {affectation[1][4]}")
 population_initial = Population(donnees)
 population_initial.affichage_population()
 
-'''
-def build_population_initial(donnees):
-    population_initiale = []    # liste de solution  
-    nb_individu = 10
 
-    for k in range(nb_individu):         # création de nb_individu solution initiale
-        solution = []               # une solution est une liste d'affectation
-        for i in range(donnees.missions.shape[0]): #parcours le tableau mission ligne par ligne
-            affectation = []            # liste contenant les informations d'une affectation de mission sous la forme [id_mission,id_centre,id_employee, date, heure d’arrivé, heure de départ , lieu de de départ,coût des distances, spécialité de l’employé]
-
-            planning_employee = Employee(donnees.employees)                   # pour chaque solution ou choromosome un planning des employee y est associé
-
-            index_employee_aleatoire = random.randint(1,donnees.employees.shape[0])     # choix d'un id d'employé aléatoire
-            competence_mission = donnees.missions.iat[i,4] # accès à la compétence de la mission à la ligne i
-
-            while donnees.employees.iat[index_employee_aleatoire,2] != competence_mission :     # temps que l'employé tiré au hasard n'a pas la bonne compétence on recommence
-                index_employee_aleatoire = random.randint(1,donnees.employees.shape[0])
-            
-            mission_affecter = planning_employee.est_disponible(index_employee_aleatoire,donnees.missions.iloc[i])     # ligne du tableau de la mission i passée en paramètre
-            if(mission_affecter):   # si la mission est affecter alors on l'ajoute dans la liste affectation
-                affectation.append(index_employee_aleatoire)
-                affectation.append(donnees.missions.iloc[i]) 
-                solution.append(affectation)        # le choromosome apprend l'affectation 
-
-        solution.append(planning_employee)          # le planning des employés associé à la solution est ajouté en fin de liste 
-        population_initiale.append(solution)
-'''
 
