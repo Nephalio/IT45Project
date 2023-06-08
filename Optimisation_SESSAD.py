@@ -84,7 +84,8 @@ class Employee :    # classe qui gère les contraintes des employées
 
         # les missions peuvent commencer au plus tot à 8h du matin et finir à 18h du soir
         self.nb_jour_semaine = 5
-        self.decoupage_horaire = int(60 / 10)                                  # chaque heure est découpe en 6 intervalle de 10 minute
+        self.intervalle_temps_planning = 10
+        self.decoupage_horaire = int(60 / self.intervalle_temps_planning)                                  # chaque heure est découpe en 6 intervalle de 10 minute
         self.amplitude_horaire_max_employee = 13*self.decoupage_horaire  # 13 = amplitude horaire max , il y a entre 7h et 20h qu'un employé peut avoir une mission, 1 heure est découpé en 6 intervalle de 10 minute
         self.nb_employee = employee.shape[0]
 
@@ -97,8 +98,8 @@ class Employee :    # classe qui gère les contraintes des employées
     def est_disponible(self,id_employee,mission):
         #id_employee = id_employee - 1     # les indices sont décallés
 
-        nb_intervalle_temps_a_verifier = int((mission[3] - mission[2]) / self.decoupage_horaire)    # nombre d'intervalle de temps, c'est à dire de case à vérifier
-        index_time =  int((mission[2] - 420) / self.decoupage_horaire)                               #indice à partir du quelle la liste va commencer a être parcouru
+        nb_intervalle_temps_a_verifier = int((mission[3] - mission[2]) / self.intervalle_temps_planning)    # nombre d'intervalle de temps, c'est à dire de case à vérifier
+        index_time =  int((mission[2] - 420) / self.intervalle_temps_planning)                               #indice à partir du quelle la liste va commencer a être parcouru
 
         print(f"index time = {index_time} , heure_début_mission = {mission[2]} , heure_fin = {mission[3]} , nb_intervalle = {nb_intervalle_temps_a_verifier} ")
 
@@ -140,7 +141,7 @@ class Employee :    # classe qui gère les contraintes des employées
                         return False
 
         # on rentre dans cette boucle si l'employé est bien disponible et que toutes les contraintes sont respectés, dans ce cas on actualise son planning
-        index_time =  int((mission[2] - 420) / self.decoupage_horaire) 
+        index_time =  int((mission[2] - 420) / self.intervalle_temps_planning) 
         #print(f"index time = {index_time} , heure_début = {mission[2]} , nb_intervalle = {nb_intervalle_temps_a_verifier} ")
         for i in range(nb_intervalle_temps_a_verifier):
             self.employee_horaire[id_employee][mission[1]-1][index_time] = 1                 # si un dans l'intervalle une case vaut 1 alors l'employé n'est pas disponible , mission[1] = date 
@@ -173,7 +174,7 @@ class Donnees :     # classe qui recenses les données du problème
         instances_directory = os.path.join(script_directory, "instances")
 
         # Construit le chemin vers le dossier "30Missions-2centres"
-        missions_directory = os.path.join(instances_directory, "30Missions-2centres")
+        missions_directory = os.path.join(instances_directory, "94Missions-3centres")
 
         # Construit les chemins vers les fichiers CSV
         centers_path = os.path.join(missions_directory, "centers.csv")
