@@ -174,7 +174,7 @@ class Donnees :     # classe qui recenses les données du problème
         instances_directory = os.path.join(script_directory, "instances")
 
         # Construit le chemin vers le dossier "30Missions-2centres"
-        missions_directory = os.path.join(instances_directory, "94Missions-3centres")
+        missions_directory = os.path.join(instances_directory, "200Missions-2centres")
 
         # Construit les chemins vers les fichiers CSV
         centers_path = os.path.join(missions_directory, "centers.csv")
