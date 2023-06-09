@@ -124,7 +124,7 @@ class Population :      # population composé d'ensemble de solution
     def __init__(self,donnees):
         # crée une population initiale
         self.population = []    # liste de solution  
-        self.nb_individu = 1
+        self.nb_individu = 2
 
         for k in range(self.nb_individu):         # création de nb_individu solution initiale
             solution = []               # une solution est une liste d'affectation
@@ -146,7 +146,7 @@ class Population :      # population composé d'ensemble de solution
                 else:
                     print(f"mission {donnees.missions.iat[i,0]} non affecté (planning correspondant une ligne au dessus) \n")
 
-            solution.append(planning_employee)          # le planning des employés associé à la solution est ajouté en fin de liste 
+            solution.append(planning_employee)          # le planning des employés associé à la solution est copié et ajouté en fin de liste 
             self.population.append(solution)
 
     
@@ -205,12 +205,9 @@ class Employee :    # classe qui gère les contraintes des employées
 
     def est_disponible(self,id_employee,mission):
         #id_employee = id_employee - 1     # les indices sont décallés
-
         nb_intervalle_temps_a_verifier = int((mission[3] - mission[2]) / self.intervalle_temps_planning)    # nombre d'intervalle de temps, c'est à dire de case à vérifier
         index_time =  int((mission[2] - 420) / self.intervalle_temps_planning)                               #indice à partir du quelle la liste va commencer a être parcouru
-
         print(f"index time = {index_time} , heure_début_mission = {mission[2]} , heure_fin = {mission[3]} , nb_intervalle = {nb_intervalle_temps_a_verifier} ")
-
         ### 
         #   Vérification que l'employé est disponible sur la plage horaire de la mission , 
         #   les contraintes qui ont le plus de chances de ne pas être respecté sont vérifié en premier pour éviter les calculs inutiles
@@ -255,12 +252,36 @@ class Employee :    # classe qui gère les contraintes des employées
             self.employee_horaire[id_employee][mission[1]-1][index_time] = 1                 # si un dans l'intervalle une case vaut 1 alors l'employé n'est pas disponible , mission[1] = date 
             index_time +=  1
 
-        self.tournees_employees[id_employee][mission[1]-1].insert(-1,mission[0])        # insère à l'avant derniere élément juste avant le retour au centre
+        #self.tournees_employees[id_employee][mission[1]-1].insert(-1,mission[0])        # insère à l'avant derniere élément juste avant le retour au centre
+        self.ajout_mission_a_tournee_employee(mission,id_employee)
+        #self.calcul_temps_entre_2_mission(self.tournees_employees[id_employee][mission[1]-1][-2] ,mission[0])
 
         print(f"planning de l'employé mis à jour à qui la mission {mission[0]} vient d'etre affectée = {self.employee_horaire[id_employee][mission[1]-1]}")
         print("\n\n")
         return True
     
+    #def calcul_temps_entre_2_mission(self, id_mission1 , id_mission2):
+
+    def ajout_mission_a_tournee_employee(self, mission , id_employee):      # ajouter la mission a la bonne place dans la liste en tenant compte que l'employee est disponible pour cette mission
+        nb_mission = len(self.tournees_employees[id_employee][mission[1]-1]) - 2
+        if(nb_mission == 0):                   # si c'est la seul mission dans la tournée à ce jour précis
+            self.tournees_employees[id_employee][mission[1]-1].insert(-1,mission[0])        # insère la mission entre le départ du centre en début de journée et la fin de tournée
+
+        elif(donnees.missions.iat[ self.tournees_employees[id_employee][mission[1]-1][-1] -1 , 3 ] < mission[3]):       # comparaison de l'heure de fin de la missions avec la dernière en liste
+            self.tournees_employees[id_employee][mission[1]-1].insert(-1,mission[0])        # insère à l'avant dernier élément juste avant le retour au centre
+
+        elif(donnees.missions.iat[ self.tournees_employees[id_employee][mission[1]-1][-1] -1 , 2 ] > mission[2]):       # comparaison de l'heure de début de la mission avec la première de la liste
+            self.tournees_employees[id_employee][mission[1]-1].insert(1,mission[0])        # insère juste après le départ du centre
+
+        else:
+            for i in range(1,nb_mission):   # parcours de la liste de mission affecté au jour correspondant sans compté le départ et l'arrivé au centre
+                if(donnees.missions.iat[ self.tournees_employees[id_employee][mission[1]-1][i] -1 , 3 ] < mission[3]                # -1 pour avoir l'id de la mission non décalé
+                   and donnees.missions.iat[ self.tournees_employees[id_employee][mission[1]-1][i+1] -1 , 3 ] > mission[3]):      # si la mission est entre deux autres
+                    self.tournees_employees[id_employee][mission[1]-1].insert(i+1,mission[0]) 
+
+
+        
+
 
     def affichage_planning(self):
         for i in range(self.nb_employee):
@@ -282,6 +303,7 @@ class Employee :    # classe qui gère les contraintes des employées
 current_time = int(time.time())
 random.seed(current_time)
 
+global donnees                  # déclaration d'une variable global pour avoir accès aux données du problème partour
 donnees = Donnees()
 donnees.traitement_donnees()
 print(donnees.missions)
