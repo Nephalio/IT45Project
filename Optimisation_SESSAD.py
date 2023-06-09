@@ -34,7 +34,93 @@ class Gene :            # chaque gène est une affectation d'une mission à un e
         #for i in range(nb_affecation):
 '''
 
+class Donnees :     # classe qui lit les fichiers et recenses les données du problème
+
+
+
+
+
+    def __init__(self):     
+        # nécessite d'installer les librairies numpy ( pip install numpy ) et pandas ( pip install pandas )
+        # chemin vers le fichier à modifier et peut nécessiter d'installer openyxl  ( pip install openpyxl )
+
+        # Récupère le chemin du répertoire contenant le script Python
+        script_directory = os.path.dirname(os.path.abspath(__file__))
+
+        # Construit le chemin vers le dossier "instances"
+        instances_directory = os.path.join(script_directory, "instances")
+
+        # Construit le chemin vers le dossier "30Missions-2centres"
+        missions_directory = os.path.join(instances_directory, "30Missions-2centres")
+
+        # Construit les chemins vers les fichiers CSV
+        centers_path = os.path.join(missions_directory, "centers.csv")
+        distances_path = os.path.join(missions_directory, "distances.csv")
+        employees_path = os.path.join(missions_directory, "Employees.csv")
+        missions_path = os.path.join(missions_directory, "Missions.csv")
+
+        # Charge les fichiers CSV
+        self.centers = pd.read_csv(centers_path, header=None)
+        self.distances = pd.read_csv(distances_path, header=None)
+        self.employees = pd.read_csv(employees_path, header=None)
+        self.missions = pd.read_csv(missions_path, header=None)
+
+        # renommage des colonnes et affichage des données bruts
+
+        self.centers = self.centers.rename(columns={0: 'id'})
+        self.centers = self.centers.rename(columns={1: 'nom'})
+        #print(f"CENTRE : \n\n {self.centers} \n \n")
+
+        #print(f"distances : \n\n {self.distances} \n \n")
+
+        self.employees = self.employees.rename(columns={0: 'id'})
+        self.employees = self.employees.rename(columns={1: 'centre_ID'})
+        self.employees = self.employees.rename(columns={2: 'compétence'})
+        self.employees = self.employees.rename(columns={3: 'spécialité'})
+        #print(f"Employees : \n\n {self.employees} \n \n")
+        #print(self.mployees.columns)
+
+        self.missions = self.missions.rename(columns={0: 'id'})
+        self.missions = self.missions.rename(columns={1: 'jour'})
+        self.missions = self.missions.rename(columns={2: 'heure_début'})
+        self.missions = self.missions.rename(columns={3: 'heure_fin'})
+        self.missions = self.missions.rename(columns={4: 'compétence'})
+        self.missions = self.missions.rename(columns={5: 'spécialité'})
+        #print(f"Missions : \n\n {self.missions} \n \n")
+
+
+
+
+
+
+    def traitement_donnees(self):
+
+        # tableau déjà construit dans employee
+        #regroupe les employés avec leur centre pour calculer les compétence de chaque centre
+        self.centers_employees = pd.merge(self.centers, self.employees, left_on='id', right_on='centre_ID', how='inner', suffixes=('_center' , '_employee')) # chaque employé est associé à son centre dans un nouveau tableau , jointure inner join sur centre_ID
+        self.centers_employees = self.centers_employees.drop('centre_ID', axis=1)     # la clé de jointure est supprimé car inutile
+        #print(self.centers_employees)
+        #print("\n")
+
+        # a calculer depuis le tableau employé
+        self.counts_competence = self.centers_employees.groupby(['id_center', 'nom'])['compétence'].value_counts().unstack(fill_value=0) # compte le nombre de compétence LSF et LPC de chaque centre
+        print(f"Nombre de Compétence de chaque centre : \n\n {self.counts_competence} \n\n")
+        self.counts_specialite = self.centers_employees.groupby(['id_center', 'nom'])['spécialité'].value_counts().unstack(fill_value=0) # compte le nombre de spécialité de chaque centre
+        print(print(f"Nombre de Spécialité de chaque centre : \n\n {self.counts_specialite} \n\n"))
+
+        # quelques tests d'accès aux données des tableaux
+        #print(f'test nombre de spécialité mécanique au centre 2  = {self.counts_specialite.iloc[1,1]} {self.counts_specialite.iat[1,1]}')
+        #print(f'test = {self.missions.iat[0,5]}')   #renvoie musique
+
+        #print(centers_Employees.groupby(['compétence','nom']).value_counts())   # affiche qui possèdent des compétences LPC et LSF pour les centre
+        #print(centers_Employees["compétence"].value_counts())               # compte le nombre d'employé ayant les compétences LSF et LPC total de tous les centres (sans distinction des centres)
+        #print(centers_Employees.describe())
+
 class Population :      # population composé d'ensemble de solution
+
+
+
+
     def __init__(self,donnees):
         # crée une population initiale
         self.population = []    # liste de solution  
@@ -55,7 +141,7 @@ class Population :      # population composé d'ensemble de solution
                 mission_affecter = planning_employee.est_disponible(index_employee_aleatoire,donnees.missions.iloc[i])     # ligne du tableau de la mission i passée en paramètre
                 if(mission_affecter):   # si la mission est affecter alors on l'ajoute dans la liste affectation
                     affectation.append(index_employee_aleatoire+1)  # +1 pour avoir l'id_employé comme dans le jeu de donnée
-                    affectation.append(donnees.missions.iloc[i]) 
+                    affectation.append(donnees.missions.iloc[i])    # l'affectation prend toutes les données de la mission en question
                     solution.append(affectation)        # le choromosome apprend l'affectation 
                 else:
                     print(f"mission {donnees.missions.iat[i,0]} non affecté (planning correspondant une ligne au dessus) \n")
@@ -64,6 +150,10 @@ class Population :      # population composé d'ensemble de solution
             self.population.append(solution)
 
     
+
+
+
+
     def affichage_population(self):
         
         for i in range(len(self.population)):
@@ -71,20 +161,22 @@ class Population :      # population composé d'ensemble de solution
             #print(f"planning_employé = {self.population[i][-1]}")
             self.population[i][-1].affichage_planning()
             print("\n\n\n")
-            for j in range(len(self.population[i])-1):
-                print(f"id_employe = {self.population[i][j][0]} effectue la mission  : id = {self.population[i][j][1][0]} , jour = {self.population[i][j][1][1]} , heure_debut = {self.population[i][j][1][2]} , heure_fin = {self.population[i][j][1][3]}")
-        
+            #for j in range(len(self.population[i])-1):
+                #print(f"id_employe = {self.population[i][j][0]} effectue la mission  : id = {self.population[i][j][1][0]} , jour = {self.population[i][j][1][1]} , heure_debut = {self.population[i][j][1][2]} , heure_fin = {self.population[i][j][1][3]}")
+            self.population[i][-1].affichage_tournee()
       
 
 
 class Employee :    # classe qui gère les contraintes des employées
 
 
+
+
     def __init__(self,employee):
 
-        # les missions peuvent commencer au plus tot à 8h du matin et finir à 18h du soir
+        # les missions peuvent commencer au plus tot à 7h du matin et finir à 20h du soir
         self.nb_jour_semaine = 5
-        self.intervalle_temps_planning = 10
+        self.intervalle_temps_planning = 10     # le planning a des itnervalle de temps de 10 minutes
         self.decoupage_horaire = int(60 / self.intervalle_temps_planning)                                  # chaque heure est découpe en 6 intervalle de 10 minute
         self.amplitude_horaire_max_employee = 13*self.decoupage_horaire  # 13 = amplitude horaire max , il y a entre 7h et 20h qu'un employé peut avoir une mission, 1 heure est découpé en 6 intervalle de 10 minute
         self.nb_employee = employee.shape[0]
@@ -94,6 +186,22 @@ class Employee :    # classe qui gère les contraintes des employées
         # si = 0 alors c'est une heure libre , si = 1 alors l'employee n'est pas libre
         self.employee_horaire = [ [ [0 for i in range(self.amplitude_horaire_max_employee)]  for j in range(self.nb_jour_semaine) ] for k in range(self.nb_employee) ]
         #print(self.employee_horaire)   
+
+        # construction de la liste de la tournée de chaque employé pour les 5 jours de la semaine qui commence et finit  sa tournée par son centre auquel il est affecté
+        self.tournees_employees = []        
+        for i in range(self.nb_employee):   
+            l = []  
+            for j in range(self.nb_jour_semaine):
+                l.append([employee.iat[i,1] , employee.iat[i,1]])           # on affecte le centre de l'employée comme départ et fin de tournée car l'employée part du centre et finit sa tournée en retournant au centre
+            self.tournees_employees.append(l)
+
+        # test
+        #self.tournees_employees[1][4].append(10)    # l'employé avec l'id = 2 au jour 5 (vendredi) prend la mission 10
+        #print(self.tournees_employees)
+
+
+
+
 
     def est_disponible(self,id_employee,mission):
         #id_employee = id_employee - 1     # les indices sont décallés
@@ -147,9 +255,9 @@ class Employee :    # classe qui gère les contraintes des employées
             self.employee_horaire[id_employee][mission[1]-1][index_time] = 1                 # si un dans l'intervalle une case vaut 1 alors l'employé n'est pas disponible , mission[1] = date 
             index_time +=  1
 
+        self.tournees_employees[id_employee][mission[1]-1].insert(-1,mission[0])        # insère à l'avant derniere élément juste avant le retour au centre
 
-
-        print(f"planning de l'employé mis à jour à qui la mission vient d'etre affectée = {self.employee_horaire[id_employee][mission[1]-1]}")
+        print(f"planning de l'employé mis à jour à qui la mission {mission[0]} vient d'etre affectée = {self.employee_horaire[id_employee][mission[1]-1]}")
         print("\n\n")
         return True
     
@@ -160,78 +268,13 @@ class Employee :    # classe qui gère les contraintes des employées
                 print(f" planning de l'id_employé = {i+1} au jour {j+1} = {self.employee_horaire[i][j]} \n")            # i+1 pour être raccord avec les id et jour des données 
                 print(f"{len(self.employee_horaire[i][j])}")
 
-
-class Donnees :     # classe qui recenses les données du problème
-
-    def __init__(self):     
-        # nécessite d'installer les librairies numpy ( pip install numpy ) et pandas ( pip install pandas )
-        # chemin vers le fichier à modifier et peut nécessiter d'installer openyxl  ( pip install openpyxl )
-
-        # Récupère le chemin du répertoire contenant le script Python
-        script_directory = os.path.dirname(os.path.abspath(__file__))
-
-        # Construit le chemin vers le dossier "instances"
-        instances_directory = os.path.join(script_directory, "instances")
-
-        # Construit le chemin vers le dossier "30Missions-2centres"
-        missions_directory = os.path.join(instances_directory, "200Missions-2centres")
-
-        # Construit les chemins vers les fichiers CSV
-        centers_path = os.path.join(missions_directory, "centers.csv")
-        distances_path = os.path.join(missions_directory, "distances.csv")
-        employees_path = os.path.join(missions_directory, "Employees.csv")
-        missions_path = os.path.join(missions_directory, "Missions.csv")
-
-        # Charge les fichiers CSV
-        self.centers = pd.read_csv(centers_path, header=None)
-        self.distances = pd.read_csv(distances_path, header=None)
-        self.employees = pd.read_csv(employees_path, header=None)
-        self.missions = pd.read_csv(missions_path, header=None)
-
-        # renommage des colonnes et affichage des données bruts
-
-        self.centers = self.centers.rename(columns={0: 'id'})
-        self.centers = self.centers.rename(columns={1: 'nom'})
-        #print(f"CENTRE : \n\n {self.centers} \n \n")
-
-        #print(f"distances : \n\n {self.distances} \n \n")
-
-        self.employees = self.employees.rename(columns={0: 'id'})
-        self.employees = self.employees.rename(columns={1: 'centre_ID'})
-        self.employees = self.employees.rename(columns={2: 'compétence'})
-        self.employees = self.employees.rename(columns={3: 'spécialité'})
-        #print(f"Employees : \n\n {self.employees} \n \n")
-        #print(self.mployees.columns)
-
-        self.missions = self.missions.rename(columns={0: 'id'})
-        self.missions = self.missions.rename(columns={1: 'jour'})
-        self.missions = self.missions.rename(columns={2: 'heure_début'})
-        self.missions = self.missions.rename(columns={3: 'heure_fin'})
-        self.missions = self.missions.rename(columns={4: 'compétence'})
-        self.missions = self.missions.rename(columns={5: 'spécialité'})
-        print(f"Missions : \n\n {self.missions} \n \n")
+    def affichage_tournee(self):
+        for i in range(self.nb_employee):
+            for j in range(self.nb_jour_semaine):
+                print(f" tournée de l'employé avec l'id = {i+1} au jour {j+1} = {self.tournees_employees[i][j]} \n")            # i+1 pour être raccord avec les id et jour des données 
 
 
-    def traitement_donnees(self):
 
-        #regroupe les employés avec leur centre pour calculer les compétence de chaque centre
-        self.centers_employees = pd.merge(self.centers, self.employees, left_on='id', right_on='centre_ID', how='inner', suffixes=('_center' , '_employee')) # chaque employé est associé à son centre dans un nouveau tableau , jointure inner join sur centre_ID
-        self.centers_employees = self.centers_employees.drop('centre_ID', axis=1)     # la clé de jointure est supprimé car inutile
-        print(self.centers_employees)
-        print("\n")
-
-        self.counts_competence = self.centers_employees.groupby(['id_center', 'nom'])['compétence'].value_counts().unstack(fill_value=0) # compte le nombre de compétence LSF et LPC de chaque centre
-        print(f"Nombre de Compétence de chaque centre : \n\n {self.counts_competence} \n\n")
-        self.counts_specialite = self.centers_employees.groupby(['id_center', 'nom'])['spécialité'].value_counts().unstack(fill_value=0) # compte le nombre de spécialité de chaque centre
-        print(print(f"Nombre de Spécialité de chaque centre : \n\n {self.counts_specialite} \n\n"))
-
-        # quelques tests d'accès aux données des tableaux
-        #print(f'test nombre de spécialité mécanique au centre 2  = {self.counts_specialite.iloc[1,1]} {self.counts_specialite.iat[1,1]}')
-        #print(f'test = {self.missions.iat[0,5]}')   #renvoie musique
-
-        #print(centers_Employees.groupby(['compétence','nom']).value_counts())   # affiche qui possèdent des compétences LPC et LSF pour les centre
-        #print(centers_Employees["compétence"].value_counts())               # compte le nombre d'employé ayant les compétences LSF et LPC total de tous les centres (sans distinction des centres)
-        #print(centers_Employees.describe())
 
             
 
@@ -242,6 +285,7 @@ random.seed(current_time)
 donnees = Donnees()
 donnees.traitement_donnees()
 print(donnees.missions)
+print(donnees.centers)
 print(donnees.employees)
 # print(donnees.missions.shape[0]) # nb de ligne du tableau mission
 
@@ -261,6 +305,7 @@ print(f"affectation competence= {affectation[1][4]}")
 
 population_initial = Population(donnees)
 population_initial.affichage_population()
+
 
 
 
