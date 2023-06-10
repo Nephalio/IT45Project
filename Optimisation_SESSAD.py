@@ -15,25 +15,6 @@ import time
 import random
 
 
-
-''' 
-class Gene :            # chaque gène est une affectation d'une mission à un employé
-    
-    def __init__(self,mission, centre, cout_distance, specialite_employe, date, heure_arrive, heure_de_depart , lieu_de_depart):
-        self.mission = mission
-        self.centre = centre
-        self.cout_distance = cout_distance
-        self.specialite_employe = specialite_employe
-        self.date = date
-        self.heure_arrive = heure_arrive
-        self.heure_de_depart = heure_de_depart
-        self.lieu_de_depart = lieu_de_depart
-
-#class Choromosome :     # représentation d'une solution , chaque solution est une liste d'affection et chaque affectation est une liste
-    #def __init__(self,nb_affecation):   
-        #for i in range(nb_affecation):
-'''
-
 class Donnees :     # classe qui lit les fichiers et recenses les données du problème
 
 
@@ -51,7 +32,7 @@ class Donnees :     # classe qui lit les fichiers et recenses les données du pr
         instances_directory = os.path.join(script_directory, "instances")
 
         # Construit le chemin vers le dossier "30Missions-2centres"
-        missions_directory = os.path.join(instances_directory, "94Missions-3centres")
+        missions_directory = os.path.join(instances_directory, "30Missions-2centres")
 
         # Construit les chemins vers les fichiers CSV
         centers_path = os.path.join(missions_directory, "centers.csv")
@@ -116,18 +97,54 @@ class Donnees :     # classe qui lit les fichiers et recenses les données du pr
         #print(centers_Employees["compétence"].value_counts())               # compte le nombre d'employé ayant les compétences LSF et LPC total de tous les centres (sans distinction des centres)
         #print(centers_Employees.describe())
 
+
+''' 
+class Gene :            # chaque gène est une affectation d'une mission à un employé
+    
+    def __init__(self,mission, centre, cout_distance, specialite_employe, date, heure_arrive, heure_de_depart , lieu_de_depart):
+        self.mission = mission
+        self.centre = centre
+        self.cout_distance = cout_distance
+        self.specialite_employe = specialite_employe
+        self.date = date
+        self.heure_arrive = heure_arrive
+        self.heure_de_depart = heure_de_depart
+        self.lieu_de_depart = lieu_de_depart
+'''
+
+#'''
+class Choromosome :     # représentation d'une solution , chaque solution est une liste d'affection et chaque affectation est une liste
+    def __init__(self):    # une solution est la tournée de tous les employés sur une semaine, c'est à l'attribut tournee_employees de la classe Employé
+        self.solution = []
+        
+#'''
+
+class algorithme_genetique :
+
+    def __init__(self, taille_population , nb_max_de_generation , probabilite_croisement , probabilite_mutation ):
+        self.taille_population = taille_population
+        self.nb_max_de_generation = nb_max_de_generation
+        self.probabilite_croisement =  probabilite_croisement
+        self.probabilite_mutation = probabilite_mutation
+
+
+
+
 class Population :      # population composé d'ensemble de solution
 
     def __init__(self,donnees):
         # crée une population initiale
-        self.population = []    # liste de solution  
-        self.nb_individu = 1
+        self.fitness = []       # liste des fitness des différentes solutions , le premier élément est le fitness de la première solution ect
+        self.population = []    # liste de solution 
+        self.nouvelle_generation = []   # liste de solution de la génération suivante à construire 
+        self.nb_individu = 5
 
         for k in range(self.nb_individu):         # création de nb_individu solution initiale
-            solution = []               # une solution est une liste d'affectation
-            planning_employee = Employee(donnees.employees)                   # pour chaque solution ou choromosome un planning des employee y est associé
+            #solution = Choromosome()
+            #solution = []               # une solution est une liste d'affectation
+            planning_des_employees = Employee(donnees.employees)                   # pour chaque solution ou choromosome un planning des employee y est associé
             for i in range(donnees.missions.shape[0]): #parcours le tableau mission ligne par ligne
-                affectation = []            # liste contenant les informations d'une affectation de mission sous la forme [id_employe,mission]
+                #affectation = []            # liste contenant les informations d'une affectation de mission sous la forme [id_employe,mission]
 
                 index_employee_aleatoire = (random.randint(1,donnees.employees.shape[0])  - 1)   # choix d'un id d'employé aléatoire
                 competence_mission = donnees.missions.iat[i,4] # accès à la compétence de la mission à la ligne i
@@ -135,30 +152,90 @@ class Population :      # population composé d'ensemble de solution
                 while donnees.employees.iat[index_employee_aleatoire,2] != competence_mission :     # temps que l'employé tiré au hasard n'a pas la bonne compétence on recommence
                     index_employee_aleatoire = (random.randint(1,donnees.employees.shape[0])  - 1)
                 
-                mission_affecter = planning_employee.est_disponible(index_employee_aleatoire,donnees.missions.iloc[i])     # ligne du tableau de la mission i passée en paramètre
+                mission_affecter = planning_des_employees.est_disponible(index_employee_aleatoire,donnees.missions.iloc[i])     # ligne du tableau de la mission i passée en paramètre
                 if(mission_affecter):   # si la mission est affecter alors on l'ajoute dans la liste affectation
-                    affectation.append(index_employee_aleatoire+1)  # +1 pour avoir l'id_employé comme dans le jeu de donnée
-                    affectation.append(donnees.missions.iloc[i])    # l'affectation prend toutes les données de la mission en question
-                    solution.append(affectation)        # le choromosome apprend l'affectation 
+                    #affectation.append(index_employee_aleatoire+1)  # +1 pour avoir l'id_employé comme dans le jeu de donnée
+                    #affectation.append(donnees.missions.iloc[i])    # l'affectation prend toutes les données de la mission en question
+                    #solution.append(affectation)        # le choromosome apprend l'affectation 
+                    print(f"mission {donnees.missions.iat[i,0]} affecté à l'employé {index_employee_aleatoire + 1} \n")
                 else:
                     print(f"mission {donnees.missions.iat[i,0]} non affecté (planning correspondant une ligne au dessus) \n")
 
-            planning_employee.terminer_tournee()                        # on termine la tournée des employées en les faisant revenir au centre
-            solution.append(planning_employee)          # le planning des employés associé à la solution est copié et ajouté en fin de liste 
-            self.population.append(solution)
+            planning_des_employees.terminer_tournee()                        # on termine la tournée des employées en les faisant revenir au centre
+            #solution.append(planning_des_employees)          # le planning des employés associé à la solution est copié et ajouté en fin de liste 
+            #self.population.append(solution)
+
+            self.affichage_planning(planning_des_employees.employee_horaire)
+
+            self.population.append([self.calcul_fitness_d_une_solution(planning_des_employees) ,planning_des_employees.tournees_employees ])       # une population est une liste donc chaque élément est une liste contenant le planning employé et son fitness associé
+            #self.population.append(planning_des_employees.tournees_employees)
+        
+        self.roulette_genetique()       # on crée la roulette lorsque la population est générée
+
+    def calcul_fitness_d_une_solution(self,planning_des_employees):         # compte de le nombre d'affectation
+        nb_affectation_mission = 0
+        for i in range(planning_des_employees.nb_employee):
+            for j in range(planning_des_employees.nb_jour_semaine):
+                for k in range(1,len(planning_des_employees.tournees_employees[i][j]) -1 ):
+                    nb_affectation_mission += 1
+        print(f"\n le nombre d'affectation de la solution est {nb_affectation_mission} \n")
+        return nb_affectation_mission
+
+    
+    def roulette_genetique(self): # Chaque individu a une probabilité d’être sélectionné proportionnelle à sa performance , plus le fitness d’un individu est fort, plus il aura de chance d’être sélectionné
+
+        self.population = sorted(self.population, key=lambda x: x[0], reverse=True)     # tri les solutions de la population dans l'ordre décroissant de leur fitness respectifs
+        somme_fitness = 0
+        for i in range(len(self.population)):
+            somme_fitness += self.population[i][0]
+        
+        # on cherche a maximisier la fonction donc la probabilité d'être séléctionné Psp = Fitness_solution / somme_fitness
+        self.roulette = []
+        temp = 0
+        for i in range(len(self.population)):
+            #roulette.append( [ i,  float(self.population[i][0]/somme_fitness)  ] )          # i représente le numéro de la solution associé à sa probabilité de sélection
+            temp += float( self.population[i][0] / somme_fitness )
+            self.roulette.append( temp ) 
+        print(f" ROULETTE = {self.roulette}")
 
 
+    def selection_genetique_via_roulette(self):
+        random_number = random.random()   # tirage d'un nombre entre 0 et 1
+        for i in range(len(self.roulette) -1):
+            if (random_number > self.roulette[i] and random_number < self.roulette[i+1]):
+                self.nouvelle_generation.append(self.population[i])
+
+
+    ###
+    #AFFICHAGE
+    ###
+
+    def affichage_planning(self,employee_horaire):
+        for i in range(donnees.employees.shape[0]):
+            for j in range(5):              # on parcourt les 5 jour de la semaine
+                print(f" planning de l'id_employé = {i+1} au jour {j+1} = {employee_horaire[i][j]} \n")            # i+1 pour être raccord avec les id et jour des données 
+
+    def affichage_tournee(self,tournees_employees):
+        for i in range(donnees.employee.shape[0]):
+            for j in range(5):
+                print(f" tournée de l'employé avec l'id = {i+1} au jour {j+1} = {tournees_employees[i][j]} \n")            # i+1 pour être raccord avec les id et jour des données 
 
     def affichage_population(self):
         
         for i in range(len(self.population)):
-            #print(self.population[i])
-            #print(f"planning_employé = {self.population[i][-1]}")
-            self.population[i][-1].affichage_planning()
+
+            #self.affichage_planning()
+            print("\n\n\n")
+            for j in range(len(self.population[i])-1):
+                print(f"id_employe = {self.population[i][j][0]} effectue la mission  : id = {self.population[i][j][1][0]} , jour = {self.population[i][j][1][1]} , heure_debut = {self.population[i][j][1][2]} , heure_fin = {self.population[i][j][1][3]}")
+            self.affichage_tournee(self.population[i][1])
+            '''
+            self.population[i][1].affichage_planning()
             print("\n\n\n")
             #for j in range(len(self.population[i])-1):
                 #print(f"id_employe = {self.population[i][j][0]} effectue la mission  : id = {self.population[i][j][1][0]} , jour = {self.population[i][j][1][1]} , heure_debut = {self.population[i][j][1][2]} , heure_fin = {self.population[i][j][1][3]}")
-            self.population[i][-1].affichage_tournee()
+            self.population[i][1].affichage_tournee()
+            '''
       
 
 
@@ -405,7 +482,7 @@ class Employee :    # classe qui gère les contraintes des employées
                 self.actualisation_planning_employee_apres_ajout_mission(id_employee ,jour , temps_trajet_entre_mission_et_centre_en_interval_10_minute , index_time)
                 
 
-    
+    '''
     def affichage_planning(self):
         for i in range(self.nb_employee):
             for j in range(self.nb_jour_semaine):
@@ -416,7 +493,7 @@ class Employee :    # classe qui gère les contraintes des employées
         for i in range(self.nb_employee):
             for j in range(self.nb_jour_semaine):
                 print(f" tournée de l'employé avec l'id = {i+1} au jour {j+1} = {self.tournees_employees[i][j]} \n")            # i+1 pour être raccord avec les id et jour des données 
-
+    '''
 
 
 
@@ -450,7 +527,7 @@ print(f"affectation competence= {affectation[1][4]}")
 '''
 
 population_initial = Population(donnees)
-population_initial.affichage_population()
+#population_initial.affichage_population()
 print("---%s seconds ---" % (time.time() - start_time))
 
 
