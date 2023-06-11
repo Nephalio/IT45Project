@@ -168,10 +168,12 @@ class Population :      # population composé d'ensemble de solution
             ###
             # AFFICHAGE du planning et de la tournée des employé de la solution
             ###
-            self.affichage_planning(planning_des_employees.employee_horaire)
-            self.affichage_tournee(planning_des_employees.tournees_employees)
+            #self.affichage_planning(planning_des_employees.employee_horaire)
+            #self.affichage_tournee(planning_des_employees.tournees_employees)
+            self.affichage_planning(planning_des_employees)
+            self.affichage_tournee(planning_des_employees)
 
-            self.population.append([self.calcul_fitness_d_une_solution(planning_des_employees) ,planning_des_employees.tournees_employees ])       # une population est une liste donc chaque élément est une liste contenant le planning employé et son fitness associé
+            self.population.append([self.calcul_fitness_d_une_solution(planning_des_employees) ,planning_des_employees ])       # une population est une liste donc chaque élément est une liste contenant le planning employé et son fitness associé
             #self.population.append(planning_des_employees.tournees_employees)
         
         self.roulette_genetique()       # on crée la roulette lorsque la population est générée
@@ -208,33 +210,91 @@ class Population :      # population composé d'ensemble de solution
 
 
     def selection_genetique_via_roulette(self):    #sélectrionne aléatoirement 50% des chromosomes parmi une population selon le principe de la roulette
-        for j in range(int(len(self.population)/2)):
+        moitie_de_la_population = int(len(self.population)/2)
+        chromosome_deja_appris = []
+
+        for j in range(moitie_de_la_population ):
             random_number = random.random()   # tirage d'un nombre entre 0 et 1
-            for i in range(len(self.roulette) -1):
-                if (random_number > self.roulette[i] and random_number < self.roulette[i+1]):
-                    self.nouvelle_generation.append(self.population[i])
-                    #print(f"len = {len(self.population)}\n")
-                    del self.population[i]
-                    del self.roulette[i]
-                    #print(f"len = {len(self.population)}")
+            selection = False                   # variable pour savoir si une chromosome est bien sélectionne
+
+            while(not(selection)):
+
+                for i in range(len(self.roulette) -1):
+                    if(random_number < self.roulette[0] ):
+                        if(0 not in chromosome_deja_appris):        # on vérifie que l'on ajoute pas le même chromosome plusieur fois
+                            self.nouvelle_generation.append(self.population[0])
+                            print(f"APPREND \n")
+                            chromosome_deja_appris.append(0)
+                            selection = True
+                            break
+                        else:
+                            random_number = random.random()
+                            break
+
+                    else: 
+                        if(random_number > self.roulette[i] and random_number < self.roulette[i+1] ):
+                            if(i not in chromosome_deja_appris):            # on vérifie que l'on ajoute pas le même choromosome plusieur fois
+                                self.nouvelle_generation.append(self.population[i])
+                                print(f"APPREND \n")
+                                chromosome_deja_appris.append(i)
+                                selection = True
+                                break
+                            else:
+                                random_number = random.random()
+                                break
+
+                            
+                            #print(f"len = {len(self.population)}\n")
+
+                            #del self.population[i]
+                            #del self.roulette[i]
+                                
+                            #print(f"len = {len(self.population)}")
+        
         self.population.clear()
     
         for i in range(len(self.nouvelle_generation)):
             print("TEST NOUVELLE GENERATION \n")
+
             self.affichage_tournee(self.nouvelle_generation[i][1])
+            
         #on fait croisement
         # self.population = self.nouvelle_generation
         # self.nouvelle_generation.clear()     
 
     ###
-    #AFFICHAGE
+    #AFFICHAGE (lorsque la solution contient une instanciation de employee)
     ###
+    def affichage_population(self):   
+        for i in range(len(self.population)):
+            #print(self.population[i])
+            #print(f"planning_employé = {self.population[i][-1]}")
+            self.population[i][-1].affichage_planning()
+            print("\n\n\n")
+            #for j in range(len(self.population[i])-1):
+                #print(f"id_employe = {self.population[i][j][0]} effectue la mission  : id = {self.population[i][j][1][0]} , jour = {self.population[i][j][1][1]} , heure_debut = {self.population[i][j][1][2]} , heure_fin = {self.population[i][j][1][3]}")
+            self.population[i][-1].affichage_tournee()
 
+    def affichage_planning(self,planning_des_employees):
+        for i in range(donnees.employees.shape[0]):
+            for j in range(5):              # on parcourt les 5 jour de la semaine
+                print(f" planning de l'id_employé = {i+1} au jour {j+1} = {planning_des_employees.employee_horaire[i][j]} \n")            # i+1 pour être raccord avec les id et jour des données 
+
+    def affichage_tournee(self,planning_des_employees):
+        for i in range(donnees.employees.shape[0]):
+            for j in range(5):
+                print(f" tournée de l'employé avec l'id = {i+1} au jour {j+1} = {planning_des_employees.tournees_employees[i][j]} \n")            # i+1 pour être raccord avec les id et jour des données 
+
+
+    ###
+    #AFFICHAGE (lorsque la solution contient tournees_employees)
+    ###
+    '''
     def affichage_planning(self,employee_horaire):
         for i in range(donnees.employees.shape[0]):
             for j in range(5):              # on parcourt les 5 jour de la semaine
                 print(f" planning de l'id_employé = {i+1} au jour {j+1} = {employee_horaire[i][j]} \n")            # i+1 pour être raccord avec les id et jour des données 
-
+    
     def affichage_tournee(self,tournees_employees):
         for i in range(donnees.employees.shape[0]):
             for j in range(5):
@@ -249,6 +309,7 @@ class Population :      # population composé d'ensemble de solution
             for j in range(len(self.population[i])-1):
                 print(f"id_employe = {self.population[i][j][0]} effectue la mission  : id = {self.population[i][j][1][0]} , jour = {self.population[i][j][1][1]} , heure_debut = {self.population[i][j][1][2]} , heure_fin = {self.population[i][j][1][3]}")
             self.affichage_tournee(self.population[i][1])
+    '''
 
       
 
@@ -496,7 +557,7 @@ class Employee :    # classe qui gère les contraintes des employées
                 self.actualisation_planning_employee_apres_ajout_mission(id_employee ,jour , temps_trajet_entre_mission_et_centre_en_interval_10_minute , index_time)
                 
 
-    '''
+    
     def affichage_planning(self):
         for i in range(self.nb_employee):
             for j in range(self.nb_jour_semaine):
@@ -507,7 +568,7 @@ class Employee :    # classe qui gère les contraintes des employées
         for i in range(self.nb_employee):
             for j in range(self.nb_jour_semaine):
                 print(f" tournée de l'employé avec l'id = {i+1} au jour {j+1} = {self.tournees_employees[i][j]} \n")            # i+1 pour être raccord avec les id et jour des données 
-    '''
+    
 
 
 
