@@ -296,7 +296,7 @@ class Population :      # population composé d'ensemble de solution
                                     #nouvelle_mission_affecte = fils1[1].ajout_mission_a_tournee_employee(  donnees.missions.iloc[ fils2.tournees_employees[id_employee][jour][mission] -1 ] , id_employee  )      # on vérifie si c'est possible
                                     nouvelle_mission_affecte = fils1[1].ajout_mission_a_tournee_employee(  donnees.missions.iloc[ fils2[1].tournees_employees[id_employee][jour][mission] -1 ] , id_employee  )
                                     if(nouvelle_mission_affecte):
-                                        print(f"nouvelle mission affecté au fils1 issu de {index_parent1} à l'employé {id_employee} à l'itération {i} lors du croisement avec l'id = {fils2[1].tournees_employees[id_employee][jour][mission]}")
+                                        print(f"nouvelle mission affecté au fils1 issu de {index_parent1+1 , index_parent2+1 } (voir {2*i} ième solution) (le parent {index_parent1+1} n'a pas la mission {fils2[1].tournees_employees[id_employee][jour][mission]} d'origine ) à l'employé {id_employee+1} à l'itération {i} lors du croisement avec l'id = {fils2[1].tournees_employees[id_employee][jour][mission]}")
                     else:                           # on croise le affectations de l'employée id_employee des deux parents pour donnée le fils 2 
                         for mission in range(1 ,  nb_mission_parent1_ce_jour + 1):   # parcours des missions affecté du parent au jour donnée d'un employée donnée
                             if(fils1[1].tournees_employees[id_employee][jour][mission] not in fils2[1].tournees_employees[id_employee][jour]):    # si la mission du parent 2 n'est pas affectée au parent 1 à ce jour alors on tente de la lui affecter si c'est possible
@@ -304,7 +304,7 @@ class Population :      # population composé d'ensemble de solution
                                     #nouvelle_mission_affecte = fils2[1].ajout_mission_a_tournee_employee(  donnees.missions.iloc[ fils1.tournees_employees[id_employee][jour][mission] -1 ] , id_employee  )      # on vérifie si c'est possible
                                     nouvelle_mission_affecte = fils2[1].ajout_mission_a_tournee_employee(  donnees.missions.iloc[ fils1[1].tournees_employees[id_employee][jour][mission] -1 ] , id_employee  )
                                     if(nouvelle_mission_affecte):
-                                        print(f"nouvelle mission affecté au fils2 issu de {index_parent2} à l'employé {id_employee} à l'itération {i} lors du croisement avec l'id = {fils1[1].tournees_employees[id_employee][jour][mission]}")
+                                        print(f"nouvelle mission affecté au fils2 issu de {index_parent1+1 , index_parent2+1 } (voir {2*i +1} ième solution) (le parent {index_parent2+1} n'a pas la mission {fils1[1].tournees_employees[id_employee][jour][mission]} d'origine ) à l'employé {id_employee+1} à l'itération {i} lors du croisement avec l'id = {fils1[1].tournees_employees[id_employee][jour][mission]}")
 
                                     
             # mission_deja_affecter(self, id_mission ,  jour_mission ):           # vérifie si la mission passé en paramètre est déja affectée a un employée  
