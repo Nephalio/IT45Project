@@ -153,14 +153,20 @@ class Population :      # population composé d'ensemble de solution
                     index_employee_aleatoire = (random.randint(1,donnees.employees.shape[0])  - 1)
                 
                 mission_affecter = planning_des_employees.est_disponible(index_employee_aleatoire,donnees.missions.iloc[i])     # ligne du tableau de la mission i passée en paramètre
+
+                # AFFICHAGE DES MISSIONS QUI SONT AFFECTES ET CELLES QUI NE LE SONT PAS LORS DE LA GENERATIO NDE LA POPULTION INITIALE
+                '''
                 if(mission_affecter):   # si la mission est affecter alors on l'ajoute dans la liste affectation
                     #affectation.append(index_employee_aleatoire+1)  # +1 pour avoir l'id_employé comme dans le jeu de donnée
                     #affectation.append(donnees.missions.iloc[i])    # l'affectation prend toutes les données de la mission en question
                     #solution.append(affectation)        # le choromosome apprend l'affectation 
+
                     print(f"mission {donnees.missions.iat[i,0]} affecté à l'employé {index_employee_aleatoire + 1} \n")
+
                 else:
                     print(f"mission {donnees.missions.iat[i,0]} non affecté (planning correspondant une ligne au dessus) \n")
-
+                '''
+                
             planning_des_employees.terminer_tournee()                        # on termine la tournée des employées en les faisant revenir au centre
             #solution.append(planning_des_employees)          # le planning des employés associé à la solution est copié et ajouté en fin de liste 
             #self.population.append(solution)
@@ -170,15 +176,24 @@ class Population :      # population composé d'ensemble de solution
             ###
             #self.affichage_planning(planning_des_employees.employee_horaire)
             #self.affichage_tournee(planning_des_employees.tournees_employees)
-            self.affichage_planning(planning_des_employees)
-            self.affichage_tournee(planning_des_employees)
+
+            # affichage correcte
+            #self.affichage_planning(planning_des_employees)
+            #self.affichage_tournee(planning_des_employees)
 
             self.population.append([self.calcul_fitness_d_une_solution(planning_des_employees) ,planning_des_employees ])       # une population est une liste donc chaque élément est une liste contenant le planning employé et son fitness associé
             #self.population.append(planning_des_employees.tournees_employees)
         
+        print("\n -------------------------------- FIN CREATION POPULATION INITIALE ---------------------------- \n")
+
+        print(" -------------------------------- ROULETTE ---------------------------- ")
         self.roulette_genetique()       # on crée la roulette lorsque la population est générée
-        self.selection_genetique_via_roulette()
-        # ensuite on fait les croisements 
+        self.selection_genetique_via_roulette()     # sélectionne aléatoirement 50% des individus  parmi la population de la génération actuelle et les insère dans la génération suivante selon le principe de la roulette
+                                                    # les individus selectionnes formeront des couples pour les croisement
+        #ensuite on fait croisement et on le met dans la liste nouvelle_gen puis : 
+        # self.population = self.nouvelle_generation
+        # self.nouvelle_generation.clear()  
+        self.mutation_genetique() 
 
 
 
@@ -188,7 +203,9 @@ class Population :      # population composé d'ensemble de solution
             for j in range(planning_des_employees.nb_jour_semaine):
                 for k in range(1,len(planning_des_employees.tournees_employees[i][j]) -1 ):
                     nb_affectation_mission += 1
-        print(f"\n le nombre d'affectation de la solution est {nb_affectation_mission} \n")
+
+        #print(f"\n le nombre d'affectation de la solution est {nb_affectation_mission} \n")
+
         return nb_affectation_mission
 
     
@@ -209,7 +226,7 @@ class Population :      # population composé d'ensemble de solution
         print(f" ROULETTE = {self.roulette}")
 
 
-    def selection_genetique_via_roulette(self):    #sélectrionne aléatoirement 50% des chromosomes parmi une population selon le principe de la roulette
+    def selection_genetique_via_roulette(self):    #sélectrionne aléatoirement 50% des individus qui formeront des couples pour les croisement parmi une population selon le principe de la roulette
         moitie_de_la_population = int(len(self.population)/2)
         chromosome_deja_appris = []
 
@@ -223,7 +240,6 @@ class Population :      # population composé d'ensemble de solution
                     if(random_number < self.roulette[0] ):
                         if(0 not in chromosome_deja_appris):        # on vérifie que l'on ajoute pas le même chromosome plusieur fois
                             self.nouvelle_generation.append(self.population[0])
-                            print(f"APPREND \n")
                             chromosome_deja_appris.append(0)
                             selection = True
                             break
@@ -235,32 +251,77 @@ class Population :      # population composé d'ensemble de solution
                         if(random_number > self.roulette[i] and random_number < self.roulette[i+1] ):
                             if(i not in chromosome_deja_appris):            # on vérifie que l'on ajoute pas le même choromosome plusieur fois
                                 self.nouvelle_generation.append(self.population[i])
-                                print(f"APPREND \n")
                                 chromosome_deja_appris.append(i)
                                 selection = True
                                 break
                             else:
                                 random_number = random.random()
                                 break
-
-                            
-                            #print(f"len = {len(self.population)}\n")
-
-                            #del self.population[i]
-                            #del self.roulette[i]
-                                
-                            #print(f"len = {len(self.population)}")
-        
-        self.population.clear()
-    
-        for i in range(len(self.nouvelle_generation)):
-            print("TEST NOUVELLE GENERATION \n")
-
-            self.affichage_tournee(self.nouvelle_generation[i][1])
-            
-        #on fait croisement
+ 
+        self.population.clear()         # population = []
+        #on fait croisement et on le met dans la liste nouvelle_gen puis : 
         # self.population = self.nouvelle_generation
-        # self.nouvelle_generation.clear()     
+        # self.nouvelle_generation.clear()   
+
+        # affichage des la moitié de l'ancienne génération sélectionner dans la nouvelle generation
+        print("\n-------------- SELECTIONS DE 50% DE LA POPULATION PRECEDENTE AVANT CROISEMENT ENTRE CES DERNIERS ------------")
+        for i in range(len(self.nouvelle_generation)):
+            print(self.nouvelle_generation[i])
+            #self.affichage_tournee(self.nouvelle_generation[i][1])
+       
+  
+    def mutation_genetique(self):
+        taille_population_selectionne = len(self.nouvelle_generation)
+        #print(f"TEST NOUVEL {self.nouvelle_generation}")       # [[17, <__main__.Employee object at 0x000001CFFCA49A20>], [16, <__main__.Employee object at 0x000001CFFCA4AA40>], [19, <__main__.Employee object at 0x000001CFFCA4A530>]]
+        for i in range(taille_population_selectionne):                  # on créer 2 fils à chaque itération pour au final avoir un nombre d'individu identique à la génération précèdente
+
+            # choix de 2 parents aléatoires parmis les parents sélectionnées
+            index_parent1 = (random.randint(0,taille_population_selectionne-1))  
+            index_parent2 = (random.randint(0,taille_population_selectionne-1)) 
+            while (index_parent1 == index_parent2): # vérification que les 2 parents sélectionnées ne sont pas les mêmes
+                index_parent2 = (random.randint(0,taille_population_selectionne-1))
+            fils1 = self.nouvelle_generation[index_parent1]       #fils1...
+            fils2 = self.nouvelle_generation[index_parent2]       #fils2
+
+            for id_employee in range(donnees.employees.shape[0]):
+                for jour in range(5):
+                    nb_mission_parent1_ce_jour = len(fils1[1].tournees_employees[id_employee][jour]) - 2         
+                    nb_mission_parent2_ce_jour = len(fils2[1].tournees_employees[id_employee][jour]) - 2
+
+                    if(id_employee%2 == 0):         # on croise le affectations de l'employée id_employee des deux parents pour donnée le fils 1 
+                        for mission in range(1 ,  nb_mission_parent2_ce_jour + 1):   # parcours des missions affecté du parent au jour donnée d'un employée donnée
+                        # vérification taille liste à faire
+                            if(fils2[1].tournees_employees[id_employee][jour][mission] not in fils1[1].tournees_employees[id_employee][jour]):    # si la mission du parent 2 n'est pas affectée au parent 1 à ce jour alors on tente de la lui affecter si c'est possible
+                                if(    fils1[1].mission_deja_affecter(fils2[1].tournees_employees[id_employee][jour][mission] , jour )   == False   ):           # on regarde si cette mission n'est pas déjà affecté dans le planning de la solution fils1, si elle l'est déjà on ne l'ajoutera donc pas
+                                    #nouvelle_mission_affecte = fils1[1].ajout_mission_a_tournee_employee(  donnees.missions.iloc[ fils2.tournees_employees[id_employee][jour][mission] -1 ] , id_employee  )      # on vérifie si c'est possible
+                                    nouvelle_mission_affecte = fils1[1].ajout_mission_a_tournee_employee(  donnees.missions.iloc[ fils2[1].tournees_employees[id_employee][jour][mission] -1 ] , id_employee  )
+                                    if(nouvelle_mission_affecte):
+                                        print(f"nouvelle mission affecté lors du croisement avec l'id = {fils2[1].tournees_employees[id_employee][jour][mission]}")
+                    else:                           # on croise le affectations de l'employée id_employee des deux parents pour donnée le fils 2 
+                        for mission in range(1 ,  nb_mission_parent1_ce_jour + 1):   # parcours des missions affecté du parent au jour donnée d'un employée donnée
+                            if(fils1[1].tournees_employees[id_employee][jour][mission] not in fils2[1].tournees_employees[id_employee][jour]):    # si la mission du parent 2 n'est pas affectée au parent 1 à ce jour alors on tente de la lui affecter si c'est possible
+                                if(    fils2[1].mission_deja_affecter(fils1[1].tournees_employees[id_employee][jour][mission] , jour )   == False   ):
+                                    #nouvelle_mission_affecte = fils2[1].ajout_mission_a_tournee_employee(  donnees.missions.iloc[ fils1.tournees_employees[id_employee][jour][mission] -1 ] , id_employee  )      # on vérifie si c'est possible
+                                    nouvelle_mission_affecte = fils2[1].ajout_mission_a_tournee_employee(  donnees.missions.iloc[ fils1[1].tournees_employees[id_employee][jour][mission] -1 ] , id_employee  )
+                                    if(nouvelle_mission_affecte):
+                                        print(f"nouvelle mission affecté lors du croisement avec l'id = {fils1[1].tournees_employees[id_employee][jour][mission]}")
+
+                                    
+            # mission_deja_affecter(self, id_mission ,  jour_mission ):           # vérifie si la mission passé en paramètre est déja affectée a un employée  
+            # rajouter fin de tourner en cas d'ajout ect   
+            
+            #self.population.append([self.calcul_fitness_d_une_solution(planning_des_employees) ,planning_des_employees ])
+            self.population.append( [self.calcul_fitness_d_une_solution(fils1[1]) , fils1[1] ])           # nouvelle population généré à partir de la précèdente
+            self.population.append( [self.calcul_fitness_d_une_solution(fils2[1]) , fils2[1] ])
+
+        self.nouvelle_generation.clear()  
+        # AFFICHAGE DE la generation croisé , sans mutation encore
+        print("\n ------------ NOUVELLE GENERATION APRES CROISEMENT (SANS MUTATION ENCORE) --------------")
+        for i in range(len(self.population)):
+            print(f"fitness = {self.population[i][0]}\n")
+            #self.affichage_tournee(self.population[i][1])                              # pour afficher la tournee des nouvelles solutions généré
+        # croisement
+
 
     ###
     #AFFICHAGE (lorsque la solution contient une instanciation de employee)
@@ -278,12 +339,12 @@ class Population :      # population composé d'ensemble de solution
     def affichage_planning(self,planning_des_employees):
         for i in range(donnees.employees.shape[0]):
             for j in range(5):              # on parcourt les 5 jour de la semaine
-                print(f" planning de l'id_employé = {i+1} au jour {j+1} = {planning_des_employees.employee_horaire[i][j]} \n")            # i+1 pour être raccord avec les id et jour des données 
+                print(f" planning de l'id_employé = {i+1} au jour {j+1} = {planning_des_employees.employee_horaire[i][j]} ")            # i+1 pour être raccord avec les id et jour des données 
 
     def affichage_tournee(self,planning_des_employees):
         for i in range(donnees.employees.shape[0]):
             for j in range(5):
-                print(f" tournée de l'employé avec l'id = {i+1} au jour {j+1} = {planning_des_employees.tournees_employees[i][j]} \n")            # i+1 pour être raccord avec les id et jour des données 
+                print(f" tournée de l'employé avec l'id = {i+1} au jour {j+1} = {planning_des_employees.tournees_employees[i][j]} ")            # i+1 pour être raccord avec les id et jour des données 
 
 
     ###
@@ -353,14 +414,14 @@ class Employee :    # classe qui gère les contraintes des employées
         
         nb_intervalle_temps_a_verifier = int((mission[3] - mission[2]) / self.intervalle_temps_planning)    # nombre d'intervalle de temps, c'est à dire de case à vérifier
         index_time =  int((mission[2] - 420) / self.intervalle_temps_planning)                               #indice à partir du quelle la liste va commencer a être parcouru
-        print(f"index time = {index_time} , heure_début_mission = {mission[2]} , heure_fin = {mission[3]} , nb_intervalle = {nb_intervalle_temps_a_verifier} ")
+        #print(f"index time = {index_time} , heure_début_mission = {mission[2]} , heure_fin = {mission[3]} , nb_intervalle = {nb_intervalle_temps_a_verifier} ")
 
         if(self.ajout_mission_a_tournee_employee(mission,id_employee)):
-            print(f"planning de l'employé {id_employee+1} mis à jour le {mission[1]} à qui la mission {mission[0]} vient d'etre affectée = {self.employee_horaire[id_employee][mission[1]-1]}")
-            print("\n")
+            #print(f"planning de l'employé {id_employee+1} mis à jour le {mission[1]} à qui la mission {mission[0]} vient d'etre affectée = {self.employee_horaire[id_employee][mission[1]-1]}")
+            #print("\n")
             return True
         else:
-            print(f"la mission {mission[0]} n'est pas affectée car l'emploi du temps de l'employé ne correspond pas = {self.employee_horaire[id_employee][mission[1]-1]}")
+            #print(f"la mission {mission[0]} n'est pas affectée car l'emploi du temps de l'employé ne correspond pas = {self.employee_horaire[id_employee][mission[1]-1]}")
             print("\n")
 
        
@@ -370,7 +431,9 @@ class Employee :    # classe qui gère les contraintes des employées
     def verification_disponibilite_sur_plage_horaire_pour_trajet(self,id_employee,jour,intervalle_temps,index_time):    #vérifie qu'un employé est disponible sur une plage horaire
         for i in range(intervalle_temps):
             if (self.employee_horaire[id_employee][jour][index_time] == 1):                 # si un dans l'intervalle une case vaut 1 alors l'employé n'est pas disponible , mission[1] = date 
-                    print(f"planning de l'employé pour qui le temps de trajet chevauche une autre mission = {self.employee_horaire[id_employee][jour]}")
+                    
+                    #print(f"planning de l'employé pour qui le temps de trajet chevauche une autre mission = {self.employee_horaire[id_employee][jour]}")
+
                     return False                                                                       # l'employee est indisponible sur une tranche horaire couvrant la mission
             index_time +=  1
         return True
@@ -393,7 +456,9 @@ class Employee :    # classe qui gère les contraintes des employées
                 if (self.employee_horaire[id_employee][jour][i] == 1):
                     somme_horaire_par_jour += 1
                 if( (somme_horaire_par_jour*10 + nb_intervalle_temps_a_verifier*10 + temps_trajet_entre_mission_en_interval_10_minute*10 ) >= 420):    # vérifie que la somme des heures déjà travailler + celle de la mission qui pourrait être ajouté ne dépasse pas 7h
-                    print(f"planning de l'employé pour qui la mission n'est pas affectée car >7h/jour max = {self.employee_horaire[id_employee][jour]}")
+
+                    #print(f"planning de l'employé pour qui la mission n'est pas affectée car >7h/jour max = {self.employee_horaire[id_employee][jour]}")
+
                     return False
 
 
@@ -418,8 +483,10 @@ class Employee :    # classe qui gère les contraintes des employées
             # on rentre dans cette boucle si l'employé est bien disponible et que toutes les contraintes sont respectés, dans ce cas on actualise son planning
             nb_intervalle_temps_a_verifier = int((mission[3] - mission[2]) / self.intervalle_temps_planning)    # nombre d'intervalle de temps, c'est à dire de case à vérifier
             index_time =  int((  (mission[2] - temps_trajet_entre_mission_et_centre_en_interval_10_minute * 10) - 420) / self.intervalle_temps_planning) 
-            #print(f"index time = {index_time} , heure_début = {mission[2]} , nb_intervalle = {nb_intervalle_temps_a_verifier} ")     
-            print(f"distance entre le centre {index_centre_depart + 1} de départ et la mission {mission[0]} = {donnees.distances.iat[index_centre_depart,index_mission_a_ajouter]}")  
+            #print(f"index time = {index_time} , heure_début = {mission[2]} , nb_intervalle = {nb_intervalle_temps_a_verifier} ")   
+            #   
+            #print(f"distance entre le centre {index_centre_depart + 1} de départ et la mission {mission[0]} = {donnees.distances.iat[index_centre_depart,index_mission_a_ajouter]}")  
+
             self.actualisation_planning_employee_apres_ajout_mission(id_employee ,mission[1]-1, temps_trajet_entre_mission_et_centre_en_interval_10_minute + nb_intervalle_temps_a_verifier , index_time)
 
             self.tournees_employees[id_employee][mission[1]-1].insert(1,mission[0])        # insère la mission entre le départ du centre en début de journée et la fin de tournée
@@ -448,7 +515,9 @@ class Employee :    # classe qui gère les contraintes des employées
             #nb_intervalle_temps_a_verifier = int((mission[3] - mission[2]) / self.intervalle_temps_planning)    # nombre d'intervalle de temps, c'est à dire de case à vérifier
             index_time =  int((  (mission[2] - temps_trajet_entre_mission_en_interval_10_minute * 10) - 420) / self.intervalle_temps_planning) 
             #print(f"index time = {index_time} , heure_début = {mission[2]} , nb_intervalle = {nb_intervalle_temps_a_verifier} ")
-            print(f"distance entre la dernière mission {self.tournees_employees[id_employee][mission[1]-1][-1]} et la dernière mission {mission[0]} de la journée insérée = {donnees.distances.iat[index_mission_precedente,index_mission_a_ajouter]}")  
+
+            #print(f"distance entre la dernière mission {self.tournees_employees[id_employee][mission[1]-1][-1]} et la dernière mission {mission[0]} de la journée insérée = {donnees.distances.iat[index_mission_precedente,index_mission_a_ajouter]}") 
+
             self.actualisation_planning_employee_apres_ajout_mission(id_employee ,mission[1]-1, temps_trajet_entre_mission_en_interval_10_minute + nb_intervalle_temps_a_verifier , index_time)
 
             self.tournees_employees[id_employee][mission[1]-1].insert(-1,mission[0])        # insère à l'avant dernier élément juste avant le retour au centre
@@ -479,7 +548,9 @@ class Employee :    # classe qui gère les contraintes des employées
             # on rentre dans cette boucle si l'employé est bien disponible et que toutes les contraintes sont respectés, dans ce cas on actualise son planning
             index_time =  int((  (mission[2] - temps_trajet_entre_mission_en_interval_10_minute * 10) - 420) / self.intervalle_temps_planning) 
             #print(f"index time = {index_time} , heure_début = {mission[2]} , nb_intervalle = {nb_intervalle_temps_a_verifier} ")
-            print(f"distance entre la première mission {self.tournees_employees[id_employee][mission[1]-1][1]} et la première mission {mission[0]} insérée de la journée= {donnees.distances.iat[index_mission_suivante,index_mission_a_ajouter]}")  
+
+            #print(f"distance entre la première mission {self.tournees_employees[id_employee][mission[1]-1][1]} et la première mission {mission[0]} insérée de la journée= {donnees.distances.iat[index_mission_suivante,index_mission_a_ajouter]}")
+            #   
             self.actualisation_planning_employee_apres_ajout_mission(id_employee ,mission[1]-1, temps_trajet_entre_mission_en_interval_10_minute + nb_intervalle_temps_a_verifier , index_time)
 
             self.tournees_employees[id_employee][mission[1]-1].insert(1,mission[0])        # insère juste après le départ du centre
@@ -506,8 +577,9 @@ class Employee :    # classe qui gère les contraintes des employées
                     index_mission_a_ajouter = mission[0] - 1 + donnees.centers.shape[0]
                     temps_trajet_entre_mission_precedente_et_actuelle_en_interval_10_minute = int ( (  donnees.distances.iat[index_mission_precedente,index_mission_a_ajouter]  / 50  ) * 6) + 1      
                     temps_trajet_entre_mission_suivante_et_actuelle_en_interval_10_minute = int ( (  donnees.distances.iat[index_mission_suivante,index_mission_a_ajouter]  / 50  ) * 6) + 1  
-                    print(f"distance entre la mission précèdente = {self.tournees_employees[id_employee][mission[1]-1][i]} et mission {mission[0]} insérée de la journée = {donnees.distances.iat[index_mission_precedente,index_mission_a_ajouter]}")    
-                    print(f"distance entre la mission suivante = {self.tournees_employees[id_employee][mission[1]-1][i+1]} et la mission {mission[0]} insérée de la journée= {donnees.distances.iat[index_mission_suivante,index_mission_a_ajouter]}")  
+
+                    #print(f"distance entre la mission précèdente = {self.tournees_employees[id_employee][mission[1]-1][i]} et mission {mission[0]} insérée de la journée = {donnees.distances.iat[index_mission_precedente,index_mission_a_ajouter]}")    
+                    #print(f"distance entre la mission suivante = {self.tournees_employees[id_employee][mission[1]-1][i+1]} et la mission {mission[0]} insérée de la journée= {donnees.distances.iat[index_mission_suivante,index_mission_a_ajouter]}")  
 
                     ###
                     # Vérification que l'employé ne dépasse pas 7h/j 
@@ -518,7 +590,9 @@ class Employee :    # classe qui gère les contraintes des employées
                         if (self.employee_horaire[id_employee][mission[1]-1][j] == 1):
                             somme_horaire_par_jour += 1
                         if( (somme_horaire_par_jour*10 + nb_intervalle_temps_a_verifier*10 + temps_trajet_entre_mission_precedente_et_actuelle_en_interval_10_minute*10 + temps_trajet_entre_mission_suivante_et_actuelle_en_interval_10_minute*10) >= 420):    # vérifie que la somme des heures déjà travailler + celle de la mission qui pourrait être ajouté ne dépasse pas 7h
-                            print(f"planning de l'employé pour qui la mission n'est pas affectée car >7h/jour max = {self.employee_horaire[id_employee][mission[1]-1]}")
+
+                            #print(f"planning de l'employé pour qui la mission n'est pas affectée car >7h/jour max = {self.employee_horaire[id_employee][mission[1]-1]}")
+
                             return False
                         
                     # vérification que le trajet de la mission précédente à celle actuelle n'empiète pas sur une mission
@@ -553,14 +627,23 @@ class Employee :    # classe qui gère les contraintes des employées
                 index_mission = self.tournees_employees[id_employee][jour][-2] - 1 + donnees.centers.shape[0]               
                 temps_trajet_entre_mission_et_centre_en_interval_10_minute = int ( (  donnees.distances.iat[index_centre,index_mission]  / 50  ) * 6) + 1      # on divise la distance par la vitesse de 50km/h puis on multiplie par 6 pour connaitre le nombre d'intervalle de 10 minute que cela représente, on arrondi a l'entier supérieur
                 index_time = int(( donnees.missions.iat[ self.tournees_employees[id_employee][jour][-2] - 1 ,  3] - 420) / self.intervalle_temps_planning)   #indice à partir du quelle la liste va commencer a être parcouru c'est à dire a partir de la fin de la dernière mission de l'employé
-                print(f"distance entre la dernière mission = {self.tournees_employees[id_employee][jour][-2]} de la tournée et le centre {index_centre + 1} = {donnees.distances.iat[index_centre,index_mission]}")
+
+                #print(f"distance entre la dernière mission = {self.tournees_employees[id_employee][jour][-2]} de la tournée et le centre {index_centre + 1} = {donnees.distances.iat[index_centre,index_mission]}")
+
                 self.actualisation_planning_employee_apres_ajout_mission(id_employee ,jour , temps_trajet_entre_mission_et_centre_en_interval_10_minute , index_time)
                 
 
+    def mission_deja_affecter(self, id_mission ,  jour_mission ):           # vérifie si la mission passé en paramètre est déja affectée a un employée
+        for id_employee in range(donnees.employees.shape[0]):
+            for mission in range(1,len(self.tournees_employees[id_employee][jour_mission]) - 1):
+                if(self.tournees_employees[id_employee][jour_mission][mission] == id_mission):
+                    return True
+        return False
     
     def affichage_planning(self):
         for i in range(self.nb_employee):
             for j in range(self.nb_jour_semaine):
+
                 print(f" planning de l'id_employé = {i+1} au jour {j+1} = {self.employee_horaire[i][j]} \n")            # i+1 pour être raccord avec les id et jour des données 
                 print(f"{len(self.employee_horaire[i][j])}")
 
