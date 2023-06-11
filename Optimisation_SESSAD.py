@@ -267,8 +267,8 @@ class Population :      # population composé d'ensemble de solution
         print("\n-------------- SELECTIONS DE 50% DE LA POPULATION PRECEDENTE AVANT CROISEMENT ENTRE CES DERNIERS ------------")
         for i in range(len(self.nouvelle_generation)):
             print(self.nouvelle_generation[i])
-            #self.affichage_tournee(self.nouvelle_generation[i][1])
-       
+            self.affichage_tournee(self.nouvelle_generation[i][1])
+        print("\n\n\n")
   
     def mutation_genetique(self):
         taille_population_selectionne = len(self.nouvelle_generation)
@@ -296,7 +296,7 @@ class Population :      # population composé d'ensemble de solution
                                     #nouvelle_mission_affecte = fils1[1].ajout_mission_a_tournee_employee(  donnees.missions.iloc[ fils2.tournees_employees[id_employee][jour][mission] -1 ] , id_employee  )      # on vérifie si c'est possible
                                     nouvelle_mission_affecte = fils1[1].ajout_mission_a_tournee_employee(  donnees.missions.iloc[ fils2[1].tournees_employees[id_employee][jour][mission] -1 ] , id_employee  )
                                     if(nouvelle_mission_affecte):
-                                        print(f"nouvelle mission affecté lors du croisement avec l'id = {fils2[1].tournees_employees[id_employee][jour][mission]}")
+                                        print(f"nouvelle mission affecté au fils1 issu de {index_parent1} à l'employé {id_employee} à l'itération {i} lors du croisement avec l'id = {fils2[1].tournees_employees[id_employee][jour][mission]}")
                     else:                           # on croise le affectations de l'employée id_employee des deux parents pour donnée le fils 2 
                         for mission in range(1 ,  nb_mission_parent1_ce_jour + 1):   # parcours des missions affecté du parent au jour donnée d'un employée donnée
                             if(fils1[1].tournees_employees[id_employee][jour][mission] not in fils2[1].tournees_employees[id_employee][jour]):    # si la mission du parent 2 n'est pas affectée au parent 1 à ce jour alors on tente de la lui affecter si c'est possible
@@ -304,7 +304,7 @@ class Population :      # population composé d'ensemble de solution
                                     #nouvelle_mission_affecte = fils2[1].ajout_mission_a_tournee_employee(  donnees.missions.iloc[ fils1.tournees_employees[id_employee][jour][mission] -1 ] , id_employee  )      # on vérifie si c'est possible
                                     nouvelle_mission_affecte = fils2[1].ajout_mission_a_tournee_employee(  donnees.missions.iloc[ fils1[1].tournees_employees[id_employee][jour][mission] -1 ] , id_employee  )
                                     if(nouvelle_mission_affecte):
-                                        print(f"nouvelle mission affecté lors du croisement avec l'id = {fils1[1].tournees_employees[id_employee][jour][mission]}")
+                                        print(f"nouvelle mission affecté au fils2 issu de {index_parent2} à l'employé {id_employee} à l'itération {i} lors du croisement avec l'id = {fils1[1].tournees_employees[id_employee][jour][mission]}")
 
                                     
             # mission_deja_affecter(self, id_mission ,  jour_mission ):           # vérifie si la mission passé en paramètre est déja affectée a un employée  
@@ -319,7 +319,7 @@ class Population :      # population composé d'ensemble de solution
         print("\n ------------ NOUVELLE GENERATION APRES CROISEMENT (SANS MUTATION ENCORE) --------------")
         for i in range(len(self.population)):
             print(f"fitness = {self.population[i][0]}\n")
-            #self.affichage_tournee(self.population[i][1])                              # pour afficher la tournee des nouvelles solutions généré
+            self.affichage_tournee(self.population[i][1])                              # pour afficher la tournee des nouvelles solutions généré
         # croisement
 
 
