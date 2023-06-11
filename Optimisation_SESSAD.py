@@ -18,9 +18,6 @@ import random
 class Donnees :     # classe qui lit les fichiers et recenses les données du problème
 
 
-
-
-
     def __init__(self):     
         # nécessite d'installer les librairies numpy ( pip install numpy ) et pandas ( pip install pandas )
         # chemin vers le fichier à modifier et peut nécessiter d'installer openyxl  ( pip install openpyxl )
@@ -112,12 +109,12 @@ class Gene :            # chaque gène est une affectation d'une mission à un e
         self.lieu_de_depart = lieu_de_depart
 '''
 
-#'''
+'''
 class Choromosome :     # représentation d'une solution , chaque solution est une liste d'affection et chaque affectation est une liste
     def __init__(self):    # une solution est la tournée de tous les employés sur une semaine, c'est à l'attribut tournee_employees de la classe Employé
         self.solution = []
         
-#'''
+'''
 
 class algorithme_genetique :
 
