@@ -18,6 +18,11 @@ nb_jour_par_semaine = 5
 
 #Le temps de travail d'un intervenant par jour = temps d'exécution des missions assignées + temps de déplacement. 
 
+# paramètre algorithme génétique
+
+nb_individu = 6                    # nombre d'individu dans une population
+probabilite_mutation = 0.9     
+
 
 
 
@@ -140,9 +145,9 @@ class Population :      # population composé d'ensemble de solution
         self.fitness = []       # liste des fitness des différentes solutions , le premier élément est le fitness de la première solution ect
         self.population = []    # liste de solution 
         self.nouvelle_generation = []   # liste de solution de la génération suivante à construire 
-        self.nb_individu = 6
+        #self.nb_individu = 6
 
-        for k in range(self.nb_individu):         # création de nb_individu solution initiale
+        for k in range(nb_individu):         # création de nb_individu solution initiale
             #solution = Choromosome()
             #solution = []               # une solution est une liste d'affectation
             planning_des_employees = Employee(donnees.employees)                   # pour chaque solution ou choromosome un planning des employee y est associé
@@ -197,7 +202,8 @@ class Population :      # population composé d'ensemble de solution
         #ensuite on fait croisement et on le met dans la liste nouvelle_gen puis : 
         # self.population = self.nouvelle_generation
         # self.nouvelle_generation.clear()  
-        self.mutation_genetique() 
+        self.croisement_genetique()
+        self.mutation_genetique()
 
 
 
@@ -274,7 +280,8 @@ class Population :      # population composé d'ensemble de solution
             self.affichage_tournee(self.nouvelle_generation[i][1])
         print("\n\n\n")
   
-    def mutation_genetique(self):
+    def croisement_genetique(self):
+
         taille_population_selectionne = len(self.nouvelle_generation)
         #print(f"TEST NOUVEL {self.nouvelle_generation}")       # [[17, <__main__.Employee object at 0x000001CFFCA49A20>], [16, <__main__.Employee object at 0x000001CFFCA4AA40>], [19, <__main__.Employee object at 0x000001CFFCA4A530>]]
         for i in range(taille_population_selectionne):                  # on créer 2 fils à chaque itération pour au final avoir un nombre d'individu identique à la génération précèdente
@@ -287,14 +294,14 @@ class Population :      # population composé d'ensemble de solution
             fils1 = self.nouvelle_generation[index_parent1]       #fils1...
             fils2 = self.nouvelle_generation[index_parent2]       #fils2
 
-            for id_employee in range(donnees.employees.shape[0]):
+            for id_employee in range(donnees.employees.shape[0]):   # croisement d'un gène sur 2 entre les 2 parents
                 for jour in range(5):
                     nb_mission_parent1_ce_jour = len(fils1[1].tournees_employees[id_employee][jour]) - 2         
                     nb_mission_parent2_ce_jour = len(fils2[1].tournees_employees[id_employee][jour]) - 2
 
                     if(id_employee%2 == 0):         # on croise le affectations de l'employée id_employee des deux parents pour donnée le fils 1 
                         for mission in range(1 ,  nb_mission_parent2_ce_jour + 1):   # parcours des missions affecté du parent au jour donnée d'un employée donnée
-                        # vérification taille liste à faire
+                        # les nouvelles missions affectées par croisement respectent les compétences car les croisement se font entre même employé , par exemple l'employé 3 du parents 1 et 2 cherchent à croiser leurs missions ensemble ect
                             if(fils2[1].tournees_employees[id_employee][jour][mission] not in fils1[1].tournees_employees[id_employee][jour]):    # si la mission du parent 2 n'est pas affectée au parent 1 à ce jour alors on tente de la lui affecter si c'est possible
                                 if(    fils1[1].mission_deja_affecter(fils2[1].tournees_employees[id_employee][jour][mission] , jour )   == False   ):           # on regarde si cette mission n'est pas déjà affecté dans le planning de la solution fils1, si elle l'est déjà on ne l'ajoutera donc pas
                                     #nouvelle_mission_affecte = fils1[1].ajout_mission_a_tournee_employee(  donnees.missions.iloc[ fils2.tournees_employees[id_employee][jour][mission] -1 ] , id_employee  )      # on vérifie si c'est possible
@@ -325,6 +332,50 @@ class Population :      # population composé d'ensemble de solution
             print(f"fitness = {self.population[i][0]}\n")
             self.affichage_tournee(self.population[i][1])                              # pour afficher la tournee des nouvelles solutions généré
         # croisement
+
+    def mutation_genetique(self):           # mutation de la population nouvellement crée après croisement avec une certaine probabilité de mutation
+        #probabilite_mutation
+        tentative_de_selection_mission = 10   # on tente de tirer jusqu'a 5 mission aléatoirement pour qu'elle ne soit pas déja affectée
+        for individu in range(nb_individu):
+            random_number = random.random()   # tirage d'un nombre entre 0 et 1
+            print(f"random_number = {random_number} ")
+
+            if(random_number < probabilite_mutation):  # mutation ou non en fonction du tirage aléatoire
+
+                for tentative in range(tentative_de_selection_mission):
+                    id_nouvelle_mission_a_affecter = random.randint(1,donnees.missions.shape[0])   # choix de l'id d'une mission aléatoire , tenter n fois de choisir une mission aléatoire qui correspond
+                    jour_nouvelle_mission_a_affecter = donnees.missions.iat[id_nouvelle_mission_a_affecter-1, 1]
+                    nouvelle_mission_affecte = False
+
+                    if(self.population[individu][1].mission_deja_affecter(id_nouvelle_mission_a_affecter , jour_nouvelle_mission_a_affecter - 1 )   ==  False):  # si la mission tiré aléatoirement 
+                        #n'est pas affecté à l'individu (c'est à dire au planning des employés de cette solution) alors on tente de la lui affecté
+                        print(f"id_mission_aléatoire qui n'est pas déjà affecté = {id_nouvelle_mission_a_affecter} à la solution {individu}")
+
+                        competence_nouvelle_mission_a_affecter = donnees.missions.iat[id_nouvelle_mission_a_affecter-1, 4]
+                        duree_nouvelle_mission_a_affecter = int (donnees.missions.iat[id_nouvelle_mission_a_affecter-1, 3] - donnees.missions.iat[id_nouvelle_mission_a_affecter-1, 2] / self.population[individu][1].intervalle_temps_planning)
+                        temps_trajet = 3 # on fixe arbitrairement le temps de trajet à 3*10 = 30 minute
+
+                        for id_employee in range(donnees.employees.shape[0]):       # on parcourt le planning de chaque employé au jour de la mission que l'on veut affecté pour voir s'il a du temps libre pour la réaliser, s c'est le cas on tente de la lui affecter
+                            if(donnees.employees.iat[id_employee,2] == competence_nouvelle_mission_a_affecter):    # on regarde si sa compétence est la même que celle de la mission qu'on veut affectée
+                                print(f"la solution {individu} et l'employé {id_employee} à la bonne compétence pour la mission tiré aléatoirement {id_nouvelle_mission_a_affecter}")
+                                #print(f"TEST {self.population[individu][1].verification_7h_max_par_jour(id_employee , jour_nouvelle_mission_a_affecter  - 1 ,duree_nouvelle_mission_a_affecter, temps_trajet)}")
+                                #if(self.population[individu][1].verification_7h_max_par_jour(id_employee , jour_nouvelle_mission_a_affecter  - 1 ,duree_nouvelle_mission_a_affecter, temps_trajet) == True ) : 
+
+                                    # on regarde le jour de la mission puis on regarde quel employé à du temps libre (c'est à dire travail moins de de la durée de la mission + les temps de trajet potentiels) sur cette journée 
+                                    # pour potentiellement lui affecté et on regarde si sa compétence est la bonne
+                                #print(f"la solution {individu} et l'employé {id_employee} a du temps libre pour la mission tiré aléatoirement {id_nouvelle_mission_a_affecter} ")
+                                nouvelle_mission_affecte = self.population[individu][1].ajout_mission_a_tournee_employee(  donnees.missions.iloc[ id_nouvelle_mission_a_affecter - 1 ] , id_employee  ) 
+
+                    
+                    if(nouvelle_mission_affecte):
+                        print(f"Mutation réussi : id_mission {id_nouvelle_mission_a_affecter} affecté à l'individu {individu}")
+    
+        print("\n ------------ NOUVELLE GENERATION APRES MUTATION --------------")
+        for i in range(len(self.population)):
+            #print(f"fitness = {self.population[i][0]}\n")
+            self.affichage_tournee(self.population[i][1])                              # pour afficher la tournee des nouvelles solutions généré
+            print("\n")
+
 
 
     ###
@@ -465,6 +516,7 @@ class Employee :    # classe qui gère les contraintes des employées
                     #print(f"planning de l'employé pour qui la mission n'est pas affectée car >7h/jour max = {self.employee_horaire[id_employee][jour]}")
 
                     return False
+            return True         #
 
 
 
