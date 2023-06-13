@@ -22,7 +22,9 @@ nb_jour_par_semaine = 5
 
 nb_individu = 10                   # nombre d'individu dans une population
 probabilite_mutation = 0.8
-nb_iteration_max = 20  
+nb_iteration_max = 10  
+
+nb_tentative_de_selection_mission_pour_mutation = 10   # on tente de tirer jusqu'a n mission aléatoirement pour qu'elle ne soit pas déjà affectée dans la solution et ainsi essayé de l'affecter dans cette dernière
 
 
 
@@ -150,7 +152,7 @@ class Population :      # population composé d'ensemble de solution
         #self.nb_individu = 6
 
         for k in range(nb_individu):         # création de nb_individu solution initiale
-            if(k%2 ==0):                    # ici on affecte les missions dans l'ordre croissant des id_missions
+            if(k%3 ==0):                    # ici on affecte les missions dans l'ordre croissant des id_missions
                 #solution = Choromosome()
                 #solution = []               # une solution est une liste d'affectation
                 planning_des_employees = Employee(donnees.employees)                   # pour chaque solution ou choromosome un planning des employee y est associé
@@ -165,7 +167,7 @@ class Population :      # population composé d'ensemble de solution
                     
                     mission_affecter = planning_des_employees.est_disponible(index_employee_aleatoire,donnees.missions.iloc[i])     # ligne du tableau de la mission i passée en paramètre
             
-            else:           # on affecte les missions dans un ordre aléatoire pour augmenter la diversité
+            elif(k%3 == 1):           # on affecte les missions dans un ordre aléatoire pour augmenter la diversité
                 planning_des_employees = Employee(donnees.employees)                   # pour chaque solution ou choromosome un planning des employee y est associé
                 for i in range(donnees.missions.shape[0]*5): 
                     #affectation = []            # liste contenant les informations d'une affectation de mission sous la forme [id_employe,mission]
@@ -177,6 +179,19 @@ class Population :      # population composé d'ensemble de solution
                         index_employee_aleatoire = (random.randint(1,donnees.employees.shape[0])  - 1)
                     
                     mission_affecter = planning_des_employees.est_disponible(index_employee_aleatoire,donnees.missions.iloc[id_mission_aleatoire])     # ligne du tableau de la mission i passée en paramètre
+            
+            else :
+                    planning_des_employees = Employee(donnees.employees)
+                    for i in range(donnees.missions.shape[0]-1,-1,-1): #parcours le tableau mission ligne par ligne dans le sens décroissant de l'id des missions
+                        #affectation = []            # liste contenant les informations d'une affectation de mission sous la forme [id_employe,mission]
+
+                        index_employee_aleatoire = (random.randint(1,donnees.employees.shape[0])  - 1)   # choix d'un id d'employé aléatoire
+                        competence_mission = donnees.missions.iat[i,4] # accès à la compétence de la mission à la ligne i
+
+                        while donnees.employees.iat[index_employee_aleatoire,2] != competence_mission :     # temps que l'employé tiré au hasard n'a pas la bonne compétence on recommence
+                            index_employee_aleatoire = (random.randint(1,donnees.employees.shape[0])  - 1)
+                        
+                        mission_affecter = planning_des_employees.est_disponible(index_employee_aleatoire,donnees.missions.iloc[i])     # ligne du tableau de la mission i passée en paramètre
 
                     # AFFICHAGE DES MISSIONS QUI SONT AFFECTES ET CELLES QUI NE LE SONT PAS LORS DE LA GENERATIO NDE LA POPULTION INITIALE
                     '''
@@ -205,11 +220,19 @@ class Population :      # population composé d'ensemble de solution
             # AFFICHAGE correcte
             #self.affichage_planning(planning_des_employees)
             #self.affichage_tournee(planning_des_employees)
+            
+            
 
             self.population.append([self.calcul_fitness_d_une_solution(planning_des_employees) ,planning_des_employees ])       # une population est une liste donc chaque élément est une liste contenant le planning employé et son fitness associé
             #self.population.append(planning_des_employees.tournees_employees)
+            
         
         print("\n -------------------------------- FIN CREATION POPULATION INITIALE ---------------------------- \n")
+        print("\n -------------------------------- AFFICHAGE POPULATION INITIALE ---------------------------- \n")
+        for i in range(len(self.population)):
+            print(self.population[i])
+            #self.affichage_tournee(self.population[i][1])
+        print("\n\n\n")
 
         iteration = 0
         while(iteration < nb_iteration_max):
@@ -250,15 +273,30 @@ class Population :      # population composé d'ensemble de solution
         
 
     def calcul_fitness_d_une_solution(self,planning_des_employees):         # compte de le nombre d'affectation
-        nb_affectation_mission = 0
-        for i in range(planning_des_employees.nb_employee):
-            for j in range(nb_jour_par_semaine):
-                for k in range(1,len(planning_des_employees.tournees_employees[i][j]) -1 ):
-                    nb_affectation_mission += 1
+        fitness = 0
+        for id_employee in range(planning_des_employees.nb_employee):
+            for jour in range(nb_jour_par_semaine):
+                nb_mission = len(planning_des_employees.tournees_employees[id_employee][jour]) - 2
+                for mission in range(1,nb_mission + 1 ):
+                    fitness += 1                # correspond au nombre de missions affectées
+
+                    # on soustrait le cout de la distance du trajet car on cherche a minimiser la distance parcouru
+                    if(mission==1):       # on calcule la distance entre le départ du centre et la première mission
+                        fitness -= (donnees.distances.iat[ donnees.employees.iat[id_employee,1] - 1 , planning_des_employees.tournees_employees[id_employee][jour][mission] + donnees.centers.shape[0] -1] * 0.2) * 0.00001     # le cout des distances est représenter par les 5 premières décimales après la virgule
+                    elif(nb_mission == 2 and mission ==2):  #cas spécifique
+                        fitness -= (donnees.distances.iat[ planning_des_employees.tournees_employees[id_employee][jour][mission-1] + donnees.centers.shape[0] -1 , planning_des_employees.tournees_employees[id_employee][jour][mission] + donnees.centers.shape[0] -1] * 0.2) * 0.00001
+                        fitness -= (donnees.distances.iat[ donnees.employees.iat[id_employee,1] - 1 , planning_des_employees.tournees_employees[id_employee][jour][mission] + donnees.centers.shape[0] -1] * 0.2) * 0.00001
+                    elif(mission < nb_mission ):    # calcul le trajet entre 2 mission
+                        fitness -= (donnees.distances.iat[ planning_des_employees.tournees_employees[id_employee][jour][mission-1] + donnees.centers.shape[0] -1 , planning_des_employees.tournees_employees[id_employee][jour][mission] + donnees.centers.shape[0] -1] * 0.2) * 0.00001
+                    else:   # calcul le trajet entre les deux dernières missions et le retour au centre
+                        fitness -= (donnees.distances.iat[ donnees.employees.iat[id_employee,1] - 1 , planning_des_employees.tournees_employees[id_employee][jour][mission] + donnees.centers.shape[0] -1] * 0.2) * 0.00001
+
+                    if(donnees.missions.iat[mission , 5] == donnees.employees.iat[id_employee,3]):
+                        fitness += 0.0000001            # la représentation du nombre de spécialité qui conviennent aux missions est représenté à partir de la 6ième décimale après la virgule
 
         #print(f"\n le nombre d'affectation de la solution est {nb_affectation_mission} \n")
 
-        return nb_affectation_mission
+        return fitness
 
     
     def roulette_genetique(self): # Chaque individu a une probabilité d’être sélectionné proportionnelle à sa performance , plus le fitness d’un individu est fort, plus il aura de chance d’être sélectionné
@@ -391,7 +429,7 @@ class Population :      # population composé d'ensemble de solution
 
     def mutation_genetique(self):           # mutation de la population nouvellement crée après croisement avec une certaine probabilité de mutation
         #probabilite_mutation
-        nb_tentative_de_selection_mission = 20   # on tente de tirer jusqu'a n mission aléatoirement pour qu'elle ne soit pas déja affectée
+        
 
         for individu in range(nb_individu):     # on parcourt chacune de solution pour essayer de leur affecter une nouvelle mission qu'elles n'ont pas déjà , c'est la mutation
             random_number = random.random()   # tirage d'un nombre entre 0 et 1
@@ -402,7 +440,7 @@ class Population :      # population composé d'ensemble de solution
                 nb_tentative = 0
                 nouvelle_mission_affecte = False
 
-                while(not(nouvelle_mission_affecte) and (nb_tentative < nb_tentative_de_selection_mission) ):       # tant qu'une nouvelle mission n'est pas affecté ou que le nombre de tirage de mission aléatoire ne dépasse pas un seuil 
+                while(not(nouvelle_mission_affecte) and (nb_tentative < nb_tentative_de_selection_mission_pour_mutation) ):       # tant qu'une nouvelle mission n'est pas affecté ou que le nombre de tirage de mission aléatoire ne dépasse pas un seuil 
                 #for tentative in range(tentative_de_selection_mission):
                     id_nouvelle_mission_a_affecter = random.randint(1,donnees.missions.shape[0])   # choix de l'id d'une mission aléatoire , tenter n fois de choisir une mission aléatoire qui correspond
                     jour_nouvelle_mission_a_affecter = donnees.missions.iat[id_nouvelle_mission_a_affecter-1, 1]
