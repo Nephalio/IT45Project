@@ -20,9 +20,9 @@ nb_jour_par_semaine = 5
 
 # paramètre algorithme génétique
 
-nb_individu = 30                    # nombre d'individu dans une population
-probabilite_mutation = 0.9   
-nb_iteration_max = 10  
+nb_individu = 10                   # nombre d'individu dans une population
+probabilite_mutation = 0.8
+nb_iteration_max = 20  
 
 
 
@@ -41,7 +41,7 @@ class Donnees :     # classe qui lit les fichiers et recenses les données du pr
         instances_directory = os.path.join(script_directory, "instances")
 
         # Construit le chemin vers le dossier "30Missions-2centres"
-        missions_directory = os.path.join(instances_directory, "94Missions-3centres")
+        missions_directory = os.path.join(instances_directory, "100Missions-2centres")
 
         # Construit les chemins vers les fichiers CSV
         centers_path = os.path.join(missions_directory, "centers.csv")
@@ -128,6 +128,7 @@ class Choromosome :     # représentation d'une solution , chaque solution est u
         
 '''
 
+'''
 class algorithme_genetique :
 
     def __init__(self, taille_population , nb_max_de_generation , probabilite_croisement , probabilite_mutation ):
@@ -135,7 +136,7 @@ class algorithme_genetique :
         self.nb_max_de_generation = nb_max_de_generation
         self.probabilite_croisement =  probabilite_croisement
         self.probabilite_mutation = probabilite_mutation
-
+'''
 
 
 
@@ -149,32 +150,46 @@ class Population :      # population composé d'ensemble de solution
         #self.nb_individu = 6
 
         for k in range(nb_individu):         # création de nb_individu solution initiale
-            #solution = Choromosome()
-            #solution = []               # une solution est une liste d'affectation
-            planning_des_employees = Employee(donnees.employees)                   # pour chaque solution ou choromosome un planning des employee y est associé
-            for i in range(donnees.missions.shape[0]): #parcours le tableau mission ligne par ligne
-                #affectation = []            # liste contenant les informations d'une affectation de mission sous la forme [id_employe,mission]
+            if(k%2 ==0):                    # ici on affecte les missions dans l'ordre croissant des id_missions
+                #solution = Choromosome()
+                #solution = []               # une solution est une liste d'affectation
+                planning_des_employees = Employee(donnees.employees)                   # pour chaque solution ou choromosome un planning des employee y est associé
+                for i in range(donnees.missions.shape[0]): #parcours le tableau mission ligne par ligne
+                    #affectation = []            # liste contenant les informations d'une affectation de mission sous la forme [id_employe,mission]
 
-                index_employee_aleatoire = (random.randint(1,donnees.employees.shape[0])  - 1)   # choix d'un id d'employé aléatoire
-                competence_mission = donnees.missions.iat[i,4] # accès à la compétence de la mission à la ligne i
+                    index_employee_aleatoire = (random.randint(1,donnees.employees.shape[0])  - 1)   # choix d'un id d'employé aléatoire
+                    competence_mission = donnees.missions.iat[i,4] # accès à la compétence de la mission à la ligne i
 
-                while donnees.employees.iat[index_employee_aleatoire,2] != competence_mission :     # temps que l'employé tiré au hasard n'a pas la bonne compétence on recommence
-                    index_employee_aleatoire = (random.randint(1,donnees.employees.shape[0])  - 1)
-                
-                mission_affecter = planning_des_employees.est_disponible(index_employee_aleatoire,donnees.missions.iloc[i])     # ligne du tableau de la mission i passée en paramètre
+                    while donnees.employees.iat[index_employee_aleatoire,2] != competence_mission :     # temps que l'employé tiré au hasard n'a pas la bonne compétence on recommence
+                        index_employee_aleatoire = (random.randint(1,donnees.employees.shape[0])  - 1)
+                    
+                    mission_affecter = planning_des_employees.est_disponible(index_employee_aleatoire,donnees.missions.iloc[i])     # ligne du tableau de la mission i passée en paramètre
+            
+            else:           # on affecte les missions dans un ordre aléatoire pour augmenter la diversité
+                planning_des_employees = Employee(donnees.employees)                   # pour chaque solution ou choromosome un planning des employee y est associé
+                for i in range(donnees.missions.shape[0]*5): 
+                    #affectation = []            # liste contenant les informations d'une affectation de mission sous la forme [id_employe,mission]
+                    id_mission_aleatoire = (random.randint(1,donnees.missions.shape[0]))  - 1       # choix d'une mission aléatoire
+                    index_employee_aleatoire = (random.randint(1,donnees.employees.shape[0])  - 1)   # choix d'un id d'employé aléatoire
+                    competence_mission = donnees.missions.iat[id_mission_aleatoire,4] # accès à la compétence de la mission à la ligne i
 
-                # AFFICHAGE DES MISSIONS QUI SONT AFFECTES ET CELLES QUI NE LE SONT PAS LORS DE LA GENERATIO NDE LA POPULTION INITIALE
-                '''
-                if(mission_affecter):   # si la mission est affecter alors on l'ajoute dans la liste affectation
-                    #affectation.append(index_employee_aleatoire+1)  # +1 pour avoir l'id_employé comme dans le jeu de donnée
-                    #affectation.append(donnees.missions.iloc[i])    # l'affectation prend toutes les données de la mission en question
-                    #solution.append(affectation)        # le choromosome apprend l'affectation 
+                    while donnees.employees.iat[index_employee_aleatoire,2] != competence_mission :     # temps que l'employé tiré au hasard n'a pas la bonne compétence on recommence
+                        index_employee_aleatoire = (random.randint(1,donnees.employees.shape[0])  - 1)
+                    
+                    mission_affecter = planning_des_employees.est_disponible(index_employee_aleatoire,donnees.missions.iloc[id_mission_aleatoire])     # ligne du tableau de la mission i passée en paramètre
 
-                    print(f"mission {donnees.missions.iat[i,0]} affecté à l'employé {index_employee_aleatoire + 1} \n")
+                    # AFFICHAGE DES MISSIONS QUI SONT AFFECTES ET CELLES QUI NE LE SONT PAS LORS DE LA GENERATIO NDE LA POPULTION INITIALE
+                    '''
+                    if(mission_affecter):   # si la mission est affecter alors on l'ajoute dans la liste affectation
+                        #affectation.append(index_employee_aleatoire+1)  # +1 pour avoir l'id_employé comme dans le jeu de donnée
+                        #affectation.append(donnees.missions.iloc[i])    # l'affectation prend toutes les données de la mission en question
+                        #solution.append(affectation)        # le choromosome apprend l'affectation 
 
-                else:
-                    print(f"mission {donnees.missions.iat[i,0]} non affecté (planning correspondant une ligne au dessus) \n")
-                '''
+                        print(f"mission {donnees.missions.iat[i,0]} affecté à l'employé {index_employee_aleatoire + 1} \n")
+
+                    else:
+                        print(f"mission {donnees.missions.iat[i,0]} non affecté (planning correspondant une ligne au dessus) \n")
+                    '''
                 
             #planning_des_employees.terminer_tournee()                        # on termine la tournée des employées en les faisant revenir au centre
 
@@ -187,9 +202,9 @@ class Population :      # population composé d'ensemble de solution
             #self.affichage_planning(planning_des_employees.employee_horaire)
             #self.affichage_tournee(planning_des_employees.tournees_employees)
 
-            # affichage correcte
-            self.affichage_planning(planning_des_employees)
-            self.affichage_tournee(planning_des_employees)
+            # AFFICHAGE correcte
+            #self.affichage_planning(planning_des_employees)
+            #self.affichage_tournee(planning_des_employees)
 
             self.population.append([self.calcul_fitness_d_une_solution(planning_des_employees) ,planning_des_employees ])       # une population est une liste donc chaque élément est une liste contenant le planning employé et son fitness associé
             #self.population.append(planning_des_employees.tournees_employees)
@@ -218,6 +233,14 @@ class Population :      # population composé d'ensemble de solution
             iteration += 1
 
             # SELECTION pour recommencer le meme processus
+
+        # AFFICHAGE POPULATION FINAL
+        for i in range(len(self.population)):
+                self.affichage_tournee(self.population[i][1])
+        print("\n\n\n")
+        for i in range(len(self.population)):
+                print(self.population[i])
+        print("\n\n\n")
 
 
 
@@ -368,7 +391,7 @@ class Population :      # population composé d'ensemble de solution
 
     def mutation_genetique(self):           # mutation de la population nouvellement crée après croisement avec une certaine probabilité de mutation
         #probabilite_mutation
-        nb_tentative_de_selection_mission = 30   # on tente de tirer jusqu'a n mission aléatoirement pour qu'elle ne soit pas déja affectée
+        nb_tentative_de_selection_mission = 20   # on tente de tirer jusqu'a n mission aléatoirement pour qu'elle ne soit pas déja affectée
 
         for individu in range(nb_individu):     # on parcourt chacune de solution pour essayer de leur affecter une nouvelle mission qu'elles n'ont pas déjà , c'est la mutation
             random_number = random.random()   # tirage d'un nombre entre 0 et 1
