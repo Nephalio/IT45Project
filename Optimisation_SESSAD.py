@@ -1,18 +1,24 @@
-### 
-#    CONTRAINTES 
-###
-
-# optimisation sur une semaine de 5 jours , 7h par jour de travail par personne, 35h/semaine/personne, 
-#et une amplitude horaire max de 13 heures (différence entre l'heure de fin de la journée de travail et l'heure de début de la journée de travail)
-
-#Le temps de travail d'un intervenant par jour = temps d'exécution des missions assignées + temps de déplacement. 
-
 import numpy as np
 import os
 import pandas as pd
 
 import time
 import random
+
+### 
+#    CONTRAINTES 
+###
+
+# optimisation sur une semaine de 5 jours , 7h par jour de travail par personne, 35h/semaine/personne, 
+
+nb_heure_par_jour_max = 9
+nb_jour_par_semaine = 5
+
+#et une amplitude horaire max de 13 heures (différence entre l'heure de fin de la journée de travail et l'heure de début de la journée de travail)
+
+#Le temps de travail d'un intervenant par jour = temps d'exécution des missions assignées + temps de déplacement. 
+
+
 
 
 class Donnees :     # classe qui lit les fichiers et recenses les données du problème
@@ -198,7 +204,7 @@ class Population :      # population composé d'ensemble de solution
     def calcul_fitness_d_une_solution(self,planning_des_employees):         # compte de le nombre d'affectation
         nb_affectation_mission = 0
         for i in range(planning_des_employees.nb_employee):
-            for j in range(planning_des_employees.nb_jour_semaine):
+            for j in range(nb_jour_par_semaine):
                 for k in range(1,len(planning_des_employees.tournees_employees[i][j]) -1 ):
                     nb_affectation_mission += 1
 
@@ -380,7 +386,7 @@ class Employee :    # classe qui gère les contraintes des employées
     def __init__(self,employee):
 
         # les missions peuvent commencer au plus tot à 7h du matin et finir à 20h du soir
-        self.nb_jour_semaine = 5
+        #self.nb_jour_semaine = 5
         self.intervalle_temps_planning = 10     # le planning a des itnervalle de temps de 10 minutes
         self.decoupage_horaire = int(60 / self.intervalle_temps_planning)                                  # chaque heure est découpe en 6 intervalle de 10 minute
         self.amplitude_horaire_max_employee = 13*self.decoupage_horaire  # 13 = amplitude horaire max , il y a entre 7h et 20h qu'un employé peut avoir une mission, 1 heure est découpé en 6 intervalle de 10 minute
@@ -389,14 +395,14 @@ class Employee :    # classe qui gère les contraintes des employées
         # liste représentant le planning de chaque employé , 5 listes de 13 éléments représentant s'il est libre à une heure précise pour chaque employé , ce pour chaque employé
         # ainsi self.employee_horaire[1] représente le planning sur la semaine de l'employée qui a l'id 2 , self.employee_horaire[1][1] est son planning du mardi 
         # si = 0 alors c'est une heure libre , si = 1 alors l'employee n'est pas libre
-        self.employee_horaire = [ [ [0 for i in range(self.amplitude_horaire_max_employee)]  for j in range(self.nb_jour_semaine) ] for k in range(self.nb_employee) ]
+        self.employee_horaire = [ [ [0 for i in range(self.amplitude_horaire_max_employee)]  for j in range(nb_jour_par_semaine) ] for k in range(self.nb_employee) ]
         #print(self.employee_horaire)   
 
         # construction de la liste de la tournée de chaque employé pour les 5 jours de la semaine qui commence et finit  sa tournée par son centre auquel il est affecté
         self.tournees_employees = []        
         for i in range(self.nb_employee):   
             l = []  
-            for j in range(self.nb_jour_semaine):
+            for j in range(nb_jour_par_semaine):
                 l.append([employee.iat[i,1] , employee.iat[i,1]])           # on affecte le centre de l'employée comme départ et fin de tournée car l'employée part du centre et finit sa tournée en retournant au centre
             self.tournees_employees.append(l)
 
@@ -411,7 +417,7 @@ class Employee :    # classe qui gère les contraintes des employées
     def est_disponible(self,id_employee,mission):           # ajoute la mission a l'employé si ce dernier est disponible
         
         nb_intervalle_temps_a_verifier = int((mission[3] - mission[2]) / self.intervalle_temps_planning)    # nombre d'intervalle de temps, c'est à dire de case à vérifier
-        index_time =  int((mission[2] - 420) / self.intervalle_temps_planning)                               #indice à partir du quelle la liste va commencer a être parcouru
+        index_time =  int((mission[2] - nb_heure_par_jour_max * 60) / self.intervalle_temps_planning)                               #indice à partir du quelle la liste va commencer a être parcouru
         #print(f"index time = {index_time} , heure_début_mission = {mission[2]} , heure_fin = {mission[3]} , nb_intervalle = {nb_intervalle_temps_a_verifier} ")
 
         if(self.ajout_mission_a_tournee_employee(mission,id_employee)):
@@ -454,7 +460,7 @@ class Employee :    # classe qui gère les contraintes des employées
             for i in range(self.amplitude_horaire_max_employee):        # parcours d'une journée
                 if (self.employee_horaire[id_employee][jour][i] == 1):
                     somme_horaire_par_jour += 1
-                if( (somme_horaire_par_jour*10 + temps_max) >= 420):    # vérifie que la somme des heures déjà travailler + celle de la mission qui pourrait être ajouté ne dépasse pas 7h
+                if( (somme_horaire_par_jour*10 + temps_max) >= nb_heure_par_jour_max * 60):    # vérifie que la somme des heures déjà travailler + celle de la mission qui pourrait être ajouté ne dépasse pas 7h
 
                     #print(f"planning de l'employé pour qui la mission n'est pas affectée car >7h/jour max = {self.employee_horaire[id_employee][jour]}")
 
@@ -470,7 +476,7 @@ class Employee :    # classe qui gère les contraintes des employées
             index_centre_depart = donnees.employees.iat[id_employee,1] - 1
             index_mission_a_ajouter = mission[0] - 1 + donnees.centers.shape[0]
             temps_trajet_entre_mission_et_centre_en_interval_10_minute = int ( (  donnees.distances.iat[index_centre_depart,index_mission_a_ajouter]  / 50  ) * 6) + 1      # on divise la distance par la vitesse de 50km/h puis on multiplie par 6 pour connaitre le nombre d'intervalle de 10 minute que cela représente, on arrondi a l'entier supérieur  
-            index_time = int(( (mission[2] - (temps_trajet_entre_mission_et_centre_en_interval_10_minute * 10) - 420)) / self.intervalle_temps_planning)   #indice à partir du quelle la liste va commencer a être parcouru, c'est à dire l'heure de début de la mission qu'on ajoute moins le temps de trajet nécessaire pour y aller      
+            index_time = int(( (mission[2] - (temps_trajet_entre_mission_et_centre_en_interval_10_minute * 10) - nb_heure_par_jour_max * 60)) / self.intervalle_temps_planning)   #indice à partir du quelle la liste va commencer a être parcouru, c'est à dire l'heure de début de la mission qu'on ajoute moins le temps de trajet nécessaire pour y aller      
 
             # vérification inutile car aucune mission n'est affecté encore?
             ''' 
@@ -488,7 +494,7 @@ class Employee :    # classe qui gère les contraintes des employées
             self.actualisation_planning_employee_apres_ajout_mission(id_employee ,mission[1]-1, temps_trajet_entre_mission_et_centre_en_interval_10_minute + nb_intervalle_temps_a_verifier , index_time)
 
             # ajout du temps de trajet entre la seul mission assigné et le centre pour la fin de tournée (utile seulement si une seul mission est affecté car si une autre mission est affecté ensuite cela sera calculé par la suite)
-            index_time = int((mission[3] - 420) / self.intervalle_temps_planning)
+            index_time = int((mission[3] - nb_heure_par_jour_max * 60) / self.intervalle_temps_planning)
             self.actualisation_planning_employee_apres_ajout_mission(id_employee ,mission[1]-1, temps_trajet_entre_mission_et_centre_en_interval_10_minute, index_time)
 
 
@@ -502,7 +508,7 @@ class Employee :    # classe qui gère les contraintes des employées
             index_mission_precedente = self.tournees_employees[id_employee][mission[1]-1][-1] -1  + donnees.centers.shape[0]      # indice de la mission dans le tableau distance
             index_mission_a_ajouter = mission[0] - 1 + donnees.centers.shape[0]
             temps_trajet_entre_mission_et_centre_en_interval_10_minute_a_supprimer = int ( (  donnees.distances.iat[index_centre_depart,index_mission_precedente]  / 50  ) * 6) + 1
-            index_time = int((donnees.missions.iat[index_mission_precedente - donnees.centers.shape[0], 3 ] - temps_trajet_entre_mission_et_centre_en_interval_10_minute_a_supprimer * 10 - 420) / self.intervalle_temps_planning)
+            index_time = int((donnees.missions.iat[index_mission_precedente - donnees.centers.shape[0], 3 ] - temps_trajet_entre_mission_et_centre_en_interval_10_minute_a_supprimer * 10 - nb_heure_par_jour_max * 60) / self.intervalle_temps_planning)
             for j in range(temps_trajet_entre_mission_et_centre_en_interval_10_minute_a_supprimer):
                 self.employee_horaire[id_employee][mission[1]-1][index_time] = 0                 # on annule le temps de trajet entre les 2 précédentes missions car une mission s'insère entre les deux
                 index_time +=  1
@@ -511,7 +517,7 @@ class Employee :    # classe qui gère les contraintes des employées
             
             temps_trajet_entre_mission_en_interval_10_minute = int ( (  donnees.distances.iat[index_mission_precedente,index_mission_a_ajouter]  / 50  ) * 6) + 1      # on divise la distance par la vitesse de 50km/h puis on multiplie par 6 pour connaitre le nombre d'intervalle de 10 minute que cela représente, on arrondi a l'entier supérieur
             nb_intervalle_temps_a_verifier = int((mission[3] - mission[2]) / self.intervalle_temps_planning) # temps mission en nombre d'intervalle de 10mn
-            index_time = int((mission[2] - temps_trajet_entre_mission_en_interval_10_minute * 10 - 420) / self.intervalle_temps_planning)   #indice à partir du quelle la liste va commencer a être parcouru, c'est à dire l'heure de début de la mission qu'on ajoute moins le temps de trajet nécessaire pour y aller
+            index_time = int((mission[2] - temps_trajet_entre_mission_en_interval_10_minute * 10 - nb_heure_par_jour_max * 60) / self.intervalle_temps_planning)   #indice à partir du quelle la liste va commencer a être parcouru, c'est à dire l'heure de début de la mission qu'on ajoute moins le temps de trajet nécessaire pour y aller
 
             # Vérification que l'employé ne dépasse pas 7h/j 
             if(self.verification_7h_max_par_jour(id_employee,mission[1]-1,nb_intervalle_temps_a_verifier,temps_trajet_entre_mission_en_interval_10_minute) == False):
@@ -530,7 +536,7 @@ class Employee :    # classe qui gère les contraintes des employées
             self.actualisation_planning_employee_apres_ajout_mission(id_employee ,mission[1]-1, temps_trajet_entre_mission_en_interval_10_minute + nb_intervalle_temps_a_verifier , index_time)
 
             # ajout du temps de trajet entre la dernière mission qui vient d'être ajouté et le centre
-            index_time = int((mission[3]- 420) / self.intervalle_temps_planning)
+            index_time = int((mission[3]- nb_heure_par_jour_max * 60) / self.intervalle_temps_planning)
             temps_trajet_entre_mission_a_ajouter_et_centre_en_interval_10_minute = int ( (  donnees.distances.iat[index_centre_depart,index_mission_a_ajouter]  / 50  ) * 6) + 1
             self.actualisation_planning_employee_apres_ajout_mission(id_employee ,mission[1]-1, temps_trajet_entre_mission_a_ajouter_et_centre_en_interval_10_minute , index_time)
 
@@ -545,7 +551,7 @@ class Employee :    # classe qui gère les contraintes des employées
             index_centre_depart = donnees.employees.iat[id_employee,1] - 1
             index_mission_suivante = self.tournees_employees[id_employee][mission[1]-1][1] -1  + donnees.centers.shape[0]      # indice de la mission dans le tableau distance
             temps_trajet_entre_mission_et_centre_en_interval_10_minute_a_supprimer = int ( (  donnees.distances.iat[index_centre_depart,index_mission_suivante]  / 50  ) * 6) + 1
-            index_time = int((donnees.missions.iat[index_mission_suivante - donnees.centers.shape[0], 2 ] - temps_trajet_entre_mission_et_centre_en_interval_10_minute_a_supprimer * 10 - 420) / self.intervalle_temps_planning)   
+            index_time = int((donnees.missions.iat[index_mission_suivante - donnees.centers.shape[0], 2 ] - temps_trajet_entre_mission_et_centre_en_interval_10_minute_a_supprimer * 10 - nb_heure_par_jour_max * 60) / self.intervalle_temps_planning)   
             for j in range(temps_trajet_entre_mission_et_centre_en_interval_10_minute_a_supprimer):
                         self.employee_horaire[id_employee][mission[1]-1][index_time] = 0                 # on annule le temps de trajet entre les 2 précédentes missions car une mission s'insère entre les deux
                         index_time +=  1
@@ -554,13 +560,13 @@ class Employee :    # classe qui gère les contraintes des employées
             # ajout du nouveau temps de trajet entre la nouvelle mission qu'on ajoute en premier et le centre 
             index_mission_a_ajouter = mission[0] - 1 + donnees.centers.shape[0]
             temps_trajet_entre_mission_a_ajouter_et_centre_en_interval_10_minute = int ( (  donnees.distances.iat[index_centre_depart,index_mission_a_ajouter]  / 50  ) * 6) + 1
-            index_time =  int((  ( donnees.missions.iat[ index_mission_a_ajouter - donnees.centers.shape[0] , 2 ] - temps_trajet_entre_mission_a_ajouter_et_centre_en_interval_10_minute  * 10 ) - 420) / self.intervalle_temps_planning) # indice a partir du quel on ajoute le temps de trajet entre les 2 mission juste avant le commencement de la mission suivante
+            index_time =  int((  ( donnees.missions.iat[ index_mission_a_ajouter - donnees.centers.shape[0] , 2 ] - temps_trajet_entre_mission_a_ajouter_et_centre_en_interval_10_minute  * 10 ) - nb_heure_par_jour_max * 60) / self.intervalle_temps_planning) # indice a partir du quel on ajoute le temps de trajet entre les 2 mission juste avant le commencement de la mission suivante
             self.actualisation_planning_employee_apres_ajout_mission(id_employee ,mission[1]-1, temps_trajet_entre_mission_a_ajouter_et_centre_en_interval_10_minute , index_time)
             
 
             temps_trajet_entre_mission_en_interval_10_minute = int ( (  donnees.distances.iat[index_mission_suivante,index_mission_a_ajouter]  / 50  ) * 6) + 1      # on divise la distance par la vitesse de 50km/h puis on multiplie par 6 pour connaitre le nombre d'intervalle de 10 minute que cela représente, on arrondi a l'entier supérieur
             #index_time =  int((donnees.missions.iat[ self.tournees_employees[id_employee][mission[1]-1][-1] -1 , 3 ] - 420) / self.intervalle_temps_planning)   #indice à partir du quelle la liste va commencer a être parcouru
-            index_time = int((mission[2] - temps_trajet_entre_mission_en_interval_10_minute * 10 - 420) / self.intervalle_temps_planning)   #indice à partir du quelle la liste va commencer a être parcouru, c'est à dire l'heure de début de la mission qu'on ajoute moins le temps de trajet nécessaire pour y aller
+            index_time = int((mission[2] - temps_trajet_entre_mission_en_interval_10_minute * 10 - nb_heure_par_jour_max * 60) / self.intervalle_temps_planning)   #indice à partir du quelle la liste va commencer a être parcouru, c'est à dire l'heure de début de la mission qu'on ajoute moins le temps de trajet nécessaire pour y aller
             nb_intervalle_temps_a_verifier = int((mission[3] - mission[2]) / self.intervalle_temps_planning) # temps mission en nombre d'intervalle de 10mn
             
             # Vérification que l'employé ne dépasse pas 7h/j 
@@ -579,14 +585,14 @@ class Employee :    # classe qui gère les contraintes des employées
             '''
             # on rentre dans cette boucle si l'employé est bien disponible et que toutes les contraintes sont respectés, dans ce cas on actualise son planning
             #index_time =  int((  (mission[2] - temps_trajet_entre_mission_en_interval_10_minute * 10) - 420) / self.intervalle_temps_planning) 
-            index_time =  int((  (mission[2]) - 420) / self.intervalle_temps_planning)
+            index_time =  int((  (mission[2]) - nb_heure_par_jour_max * 60) / self.intervalle_temps_planning)
             #print(f"index time = {index_time} , heure_début = {mission[2]} , nb_intervalle = {nb_intervalle_temps_a_verifier} ")
 
             #print(f"distance entre la première mission {self.tournees_employees[id_employee][mission[1]-1][1]} et la première mission {mission[0]} insérée de la journée= {donnees.distances.iat[index_mission_suivante,index_mission_a_ajouter]}")
             #   
             #self.actualisation_planning_employee_apres_ajout_mission(id_employee ,mission[1]-1, temps_trajet_entre_mission_en_interval_10_minute + nb_intervalle_temps_a_verifier , index_time)
             self.actualisation_planning_employee_apres_ajout_mission(id_employee ,mission[1]-1, nb_intervalle_temps_a_verifier , index_time)            # ajout du temps de la mission
-            index_time =  int((  ( donnees.missions.iat[ index_mission_suivante - donnees.centers.shape[0] , 2 ] ) - (temps_trajet_entre_mission_en_interval_10_minute * 10) - 420) / self.intervalle_temps_planning) # indice a partir du quel on ajoute le temps de trajet entre les 2 mission juste avant le commencement de la mission suivante
+            index_time =  int((  ( donnees.missions.iat[ index_mission_suivante - donnees.centers.shape[0] , 2 ] ) - (temps_trajet_entre_mission_en_interval_10_minute * 10) - nb_heure_par_jour_max * 60) / self.intervalle_temps_planning) # indice a partir du quel on ajoute le temps de trajet entre les 2 mission juste avant le commencement de la mission suivante
             self.actualisation_planning_employee_apres_ajout_mission(id_employee ,mission[1]-1, temps_trajet_entre_mission_en_interval_10_minute , index_time)  # ajout du temps de trajet a la suite de juste avant la prochaine mission
 
             self.tournees_employees[id_employee][mission[1]-1].insert(1,mission[0])        # insère juste après le départ du centre
@@ -602,7 +608,7 @@ class Employee :    # classe qui gère les contraintes des employées
                     index_mission_precedente = self.tournees_employees[id_employee][mission[1]-1][i] -1 + donnees.centers.shape[0]
                     index_mission_suivante = self.tournees_employees[id_employee][mission[1]-1][i+1] -1 + donnees.centers.shape[0]
                     temps_trajet_entre_mission_en_interval_10_minute = int ( (  donnees.distances.iat[index_mission_precedente,index_mission_suivante]  / 50  ) * 6) + 1        # temps de trajet entre les 2 missions précèdente
-                    index_time = int((donnees.missions.iat[self.tournees_employees[id_employee][mission[1]-1][i+1] - 1, 2 ] - temps_trajet_entre_mission_en_interval_10_minute * 10 - 420) / self.intervalle_temps_planning)   #indice à partir du quelle la liste va commencer a être parcouru, c'est à dire l'heure de début de la mission qu'on ajoute moins le temps de trajet nécessaire pour y aller
+                    index_time = int((donnees.missions.iat[self.tournees_employees[id_employee][mission[1]-1][i+1] - 1, 2 ] - temps_trajet_entre_mission_en_interval_10_minute * 10 - nb_heure_par_jour_max * 60) / self.intervalle_temps_planning)   #indice à partir du quelle la liste va commencer a être parcouru, c'est à dire l'heure de début de la mission qu'on ajoute moins le temps de trajet nécessaire pour y aller
                     for j in range(temps_trajet_entre_mission_en_interval_10_minute):
                         self.employee_horaire[id_employee][mission[1]-1][index_time] = 0                 # on annule le temps de trajet entre les 2 précédentes missions car une mission s'insère entre les deux
                         index_time +=  1
@@ -623,30 +629,30 @@ class Employee :    # classe qui gère les contraintes des employées
                     for j in range(self.amplitude_horaire_max_employee):        # parcours d'une journée
                         if (self.employee_horaire[id_employee][mission[1]-1][j] == 1):
                             somme_horaire_par_jour += 1
-                        if( (somme_horaire_par_jour*10 + nb_intervalle_temps_a_verifier*10 + temps_trajet_entre_mission_precedente_et_actuelle_en_interval_10_minute*10 + temps_trajet_entre_mission_suivante_et_actuelle_en_interval_10_minute*10) >= 420):    # vérifie que la somme des heures déjà travailler + celle de la mission qui pourrait être ajouté ne dépasse pas 7h
+                        if( (somme_horaire_par_jour*10 + nb_intervalle_temps_a_verifier*10 + temps_trajet_entre_mission_precedente_et_actuelle_en_interval_10_minute*10 + temps_trajet_entre_mission_suivante_et_actuelle_en_interval_10_minute*10) >= nb_heure_par_jour_max * 60):    # vérifie que la somme des heures déjà travailler + celle de la mission qui pourrait être ajouté ne dépasse pas 7h
 
                             #print(f"planning de l'employé pour qui la mission n'est pas affectée car >7h/jour max = {self.employee_horaire[id_employee][mission[1]-1]}")
 
                             return False
                         
                     # vérification que le trajet de la mission précédente à celle actuelle n'empiète pas sur une mission
-                    index_time_mission_precedente = int((mission[2] - temps_trajet_entre_mission_precedente_et_actuelle_en_interval_10_minute * 10 - 420) / self.intervalle_temps_planning)   
+                    index_time_mission_precedente = int((mission[2] - temps_trajet_entre_mission_precedente_et_actuelle_en_interval_10_minute * 10 - nb_heure_par_jour_max * 60) / self.intervalle_temps_planning)   
                     if(self.verification_disponibilite_sur_plage_horaire_pour_trajet(id_employee,mission[1]-1,temps_trajet_entre_mission_precedente_et_actuelle_en_interval_10_minute,index_time_mission_precedente) == False):   
                         return False            # l'employee est indisponible sur une tranche horaire couvrant la mission
 
                     # vérification que le trajet de la mission actuelle à la suivante n'empiète pas sur une mission
-                    index_time_mission_suivante = int((donnees.missions.iat[self.tournees_employees[id_employee][mission[1]-1][i+1] - 1, 2 ] - temps_trajet_entre_mission_suivante_et_actuelle_en_interval_10_minute * 10 - 420) / self.intervalle_temps_planning) 
+                    index_time_mission_suivante = int((donnees.missions.iat[self.tournees_employees[id_employee][mission[1]-1][i+1] - 1, 2 ] - temps_trajet_entre_mission_suivante_et_actuelle_en_interval_10_minute * 10 - nb_heure_par_jour_max * 60) / self.intervalle_temps_planning) 
                     if(self.verification_disponibilite_sur_plage_horaire_pour_trajet(id_employee,mission[1]-1,temps_trajet_entre_mission_suivante_et_actuelle_en_interval_10_minute,index_time_mission_suivante) == False):   
                         return False            # l'employee est indisponible sur une tranche horaire couvrant la mission
 
 
                      # on rentre dans cette boucle si l'employé est bien disponible et que toutes les contraintes sont respectés, dans ce cas on actualise son planning
                      # on ajoute le temps de trajet de la mission précèdente à celle qu'on insère + le temps de la mission insérée
-                    index_time =  int((  (mission[2] - temps_trajet_entre_mission_precedente_et_actuelle_en_interval_10_minute * 10) - 420) / self.intervalle_temps_planning) 
+                    index_time =  int((  (mission[2] - temps_trajet_entre_mission_precedente_et_actuelle_en_interval_10_minute * 10) - nb_heure_par_jour_max * 60) / self.intervalle_temps_planning) 
                     self.actualisation_planning_employee_apres_ajout_mission(id_employee ,mission[1]-1, temps_trajet_entre_mission_precedente_et_actuelle_en_interval_10_minute + nb_intervalle_temps_a_verifier , index_time) 
 
                     # on ajoute le temps de trajet de la mission qu'on insère à la mission suivante
-                    index_time =  int((  (donnees.missions.iat[ self.tournees_employees[id_employee][mission[1]-1][j+1] -1 , 2 ] - temps_trajet_entre_mission_suivante_et_actuelle_en_interval_10_minute * 10) - 420) / self.intervalle_temps_planning) 
+                    index_time =  int((  (donnees.missions.iat[ self.tournees_employees[id_employee][mission[1]-1][j+1] -1 , 2 ] - temps_trajet_entre_mission_suivante_et_actuelle_en_interval_10_minute * 10) - nb_heure_par_jour_max * 60) / self.intervalle_temps_planning) 
                     self.actualisation_planning_employee_apres_ajout_mission(id_employee ,mission[1]-1, temps_trajet_entre_mission_suivante_et_actuelle_en_interval_10_minute , index_time) 
 
                     self.tournees_employees[id_employee][mission[1]-1].insert(i+1,mission[0]) 
@@ -656,11 +662,11 @@ class Employee :    # classe qui gère les contraintes des employées
 
     def terminer_tournee(self):                         # rajoute le temps de trajet entre la dernière mission de la tournée et le retour au centre en fin de journée
         for id_employee in range(self.nb_employee):
-            for jour in range(self.nb_jour_semaine):
+            for jour in range(nb_jour_par_semaine):
                 index_centre =  donnees.employees.iat[id_employee , 1] - 1       
                 index_mission = self.tournees_employees[id_employee][jour][-2] - 1 + donnees.centers.shape[0]               
                 temps_trajet_entre_mission_et_centre_en_interval_10_minute = int ( (  donnees.distances.iat[index_centre,index_mission]  / 50  ) * 6) + 1      # on divise la distance par la vitesse de 50km/h puis on multiplie par 6 pour connaitre le nombre d'intervalle de 10 minute que cela représente, on arrondi a l'entier supérieur
-                index_time = int(( donnees.missions.iat[ self.tournees_employees[id_employee][jour][-2] - 1 ,  3] - 420) / self.intervalle_temps_planning)   #indice à partir du quelle la liste va commencer a être parcouru c'est à dire a partir de la fin de la dernière mission de l'employé
+                index_time = int(( donnees.missions.iat[ self.tournees_employees[id_employee][jour][-2] - 1 ,  3] - nb_heure_par_jour_max * 60) / self.intervalle_temps_planning)   #indice à partir du quelle la liste va commencer a être parcouru c'est à dire a partir de la fin de la dernière mission de l'employé
 
                 #print(f"distance entre la dernière mission = {self.tournees_employees[id_employee][jour][-2]} de la tournée et le centre {index_centre + 1} = {donnees.distances.iat[index_centre,index_mission]}")
 
@@ -676,14 +682,14 @@ class Employee :    # classe qui gère les contraintes des employées
     
     def affichage_planning(self):
         for i in range(self.nb_employee):
-            for j in range(self.nb_jour_semaine):
+            for j in range(nb_jour_par_semaine):
 
                 print(f" planning de l'id_employé = {i+1} au jour {j+1} = {self.employee_horaire[i][j]} \n")            # i+1 pour être raccord avec les id et jour des données 
                 print(f"{len(self.employee_horaire[i][j])}")
 
     def affichage_tournee(self):
         for i in range(self.nb_employee):
-            for j in range(self.nb_jour_semaine):
+            for j in range(nb_jour_par_semaine):
                 print(f" tournée de l'employé avec l'id = {i+1} au jour {j+1} = {self.tournees_employees[i][j]} \n")            # i+1 pour être raccord avec les id et jour des données 
     
 
