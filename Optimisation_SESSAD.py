@@ -335,19 +335,24 @@ class Population :      # population composé d'ensemble de solution
 
     def mutation_genetique(self):           # mutation de la population nouvellement crée après croisement avec une certaine probabilité de mutation
         #probabilite_mutation
-        tentative_de_selection_mission = 10   # on tente de tirer jusqu'a 5 mission aléatoirement pour qu'elle ne soit pas déja affectée
-        for individu in range(nb_individu):
+        nb_tentative_de_selection_mission = 10   # on tente de tirer jusqu'a n mission aléatoirement pour qu'elle ne soit pas déja affectée
+
+        for individu in range(nb_individu):     # on parcourt chacune de solution pour essayer de leur affecter une nouvelle mission qu'elles n'ont pas déjà , c'est la mutation
             random_number = random.random()   # tirage d'un nombre entre 0 et 1
-            print(f"random_number = {random_number} ")
+            #print(f"random_number = {random_number} ")
 
             if(random_number < probabilite_mutation):  # mutation ou non en fonction du tirage aléatoire
+                
+                nb_tentative = 0
+                nouvelle_mission_affecte = False
 
-                for tentative in range(tentative_de_selection_mission):
+                while(not(nouvelle_mission_affecte) and (nb_tentative < nb_tentative_de_selection_mission) ):       # tant qu'une nouvelle mission n'est pas affecté ou que le nombre de tirage de mission aléatoire ne dépasse pas un seuil 
+                #for tentative in range(tentative_de_selection_mission):
                     id_nouvelle_mission_a_affecter = random.randint(1,donnees.missions.shape[0])   # choix de l'id d'une mission aléatoire , tenter n fois de choisir une mission aléatoire qui correspond
                     jour_nouvelle_mission_a_affecter = donnees.missions.iat[id_nouvelle_mission_a_affecter-1, 1]
-                    nouvelle_mission_affecte = False
+                    nb_tentative += 1
 
-                    if(self.population[individu][1].mission_deja_affecter(id_nouvelle_mission_a_affecter , jour_nouvelle_mission_a_affecter - 1 )   ==  False):  # si la mission tiré aléatoirement 
+                    if(self.population[individu][1].mission_deja_affecter(id_nouvelle_mission_a_affecter , jour_nouvelle_mission_a_affecter - 1 )   ==  False):  # si la mission tiré aléatoirement n'est pas déjà affecté a la solution
                         #n'est pas affecté à l'individu (c'est à dire au planning des employés de cette solution) alors on tente de la lui affecté
                         print(f"id_mission_aléatoire qui n'est pas déjà affecté = {id_nouvelle_mission_a_affecter} à la solution {individu}")
 
@@ -365,11 +370,17 @@ class Population :      # population composé d'ensemble de solution
                                     # pour potentiellement lui affecté et on regarde si sa compétence est la bonne
                                 #print(f"la solution {individu} et l'employé {id_employee} a du temps libre pour la mission tiré aléatoirement {id_nouvelle_mission_a_affecter} ")
                                 nouvelle_mission_affecte = self.population[individu][1].ajout_mission_a_tournee_employee(  donnees.missions.iloc[ id_nouvelle_mission_a_affecter - 1 ] , id_employee  ) 
+  
+                            if(nouvelle_mission_affecte):           # si la mission est affecté on réintialise la variable nouvelle_mission_affecté et on sort de la boucle pour éviter le cas rare ou la même mission serait affecté 1 fois mais à plusieurs employés différents
+                                print(f"\n Mutation réussi : id_mission {id_nouvelle_mission_a_affecter} affecté à l'individu {individu} à l'employé {id_employee+1} au jour {jour_nouvelle_mission_a_affecter}\n")
+                                #nouvelle_mission_affecte = False
+                                break
+                        
 
-                    
+                    '''
                     if(nouvelle_mission_affecte):
                         print(f"Mutation réussi : id_mission {id_nouvelle_mission_a_affecter} affecté à l'individu {individu}")
-    
+                    '''
         print("\n ------------ NOUVELLE GENERATION APRES MUTATION --------------")
         for i in range(len(self.population)):
             #print(f"fitness = {self.population[i][0]}\n")
@@ -599,7 +610,7 @@ class Employee :    # classe qui gère les contraintes des employées
             self.actualisation_planning_employee_apres_ajout_mission(id_employee ,mission[1]-1, temps_trajet_entre_mission_a_ajouter_et_centre_en_interval_10_minute , index_time)
 
             self.tournees_employees[id_employee][mission[1]-1].insert(-1,mission[0])        # insère à l'avant dernier élément juste avant le retour au centre
-            #return True
+            return True
 
         
         elif(donnees.missions.iat[ self.tournees_employees[id_employee][mission[1]-1][1] -1 , 2 ] > mission[3]):       # comparaison de l'heure de début de la mission avec la première de la liste
@@ -658,7 +669,7 @@ class Employee :    # classe qui gère les contraintes des employées
             self.actualisation_planning_employee_apres_ajout_mission(id_employee ,mission[1]-1, temps_trajet_entre_mission_en_interval_10_minute , index_time)  # ajout du temps de trajet a la suite de juste avant la prochaine mission
 
             self.tournees_employees[id_employee][mission[1]-1].insert(1,mission[0])        # insère juste après le départ du centre
-            # return True
+            return True
         else:
             for i in range(1,nb_mission):   # parcours de la liste de mission affecté au jour correspondant sans compté le départ et l'arrivé au centre
                 if(donnees.missions.iat[ self.tournees_employees[id_employee][mission[1]-1][i] -1 , 3 ] < mission[2]                # -1 pour avoir l'id de la mission non décalé
@@ -721,9 +732,11 @@ class Employee :    # classe qui gère les contraintes des employées
                     self.actualisation_planning_employee_apres_ajout_mission(id_employee ,mission[1]-1, temps_trajet_entre_mission_suivante_et_actuelle_en_interval_10_minute , index_time) 
 
                     self.tournees_employees[id_employee][mission[1]-1].insert(i+1,mission[0]) 
+                    return True
                     break               
 
-        return True
+        #print(f"mission {mission[0]} affectée à id_employee = {id_employee}")
+        #return True
 
     def terminer_tournee(self):                         # rajoute le temps de trajet entre la dernière mission de la tournée et le retour au centre en fin de journée
         for id_employee in range(self.nb_employee):
