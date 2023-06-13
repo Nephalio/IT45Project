@@ -20,8 +20,9 @@ nb_jour_par_semaine = 5
 
 # paramètre algorithme génétique
 
-nb_individu = 6                    # nombre d'individu dans une population
-probabilite_mutation = 0.9     
+nb_individu = 30                    # nombre d'individu dans une population
+probabilite_mutation = 0.9   
+nb_iteration_max = 10  
 
 
 
@@ -195,17 +196,35 @@ class Population :      # population composé d'ensemble de solution
         
         print("\n -------------------------------- FIN CREATION POPULATION INITIALE ---------------------------- \n")
 
-        print(" -------------------------------- ROULETTE ---------------------------- ")
-        self.roulette_genetique()       # on crée la roulette lorsque la population est générée
-        self.selection_genetique_via_roulette()     # sélectionne aléatoirement 50% des individus  parmi la population de la génération actuelle et les insère dans la génération suivante selon le principe de la roulette
-                                                    # les individus selectionnes formeront des couples pour les croisement
-        #ensuite on fait croisement et on le met dans la liste nouvelle_gen puis : 
-        # self.population = self.nouvelle_generation
-        # self.nouvelle_generation.clear()  
-        self.croisement_genetique()
-        self.mutation_genetique()
+        iteration = 0
+        while(iteration < nb_iteration_max):
+            #print(" -------------------------------- ROULETTE ---------------------------- ")
+            self.roulette_genetique()       # on crée la roulette lorsque la population est générée
+            self.selection_genetique_via_roulette()     # sélectionne aléatoirement 50% des individus  parmi la population de la génération actuelle et les insère dans la génération suivante selon le principe de la roulette
+                                                        # les individus selectionnes formeront des couples pour les croisement
+            #ensuite on fait croisement et on le met dans la liste nouvelle_gen puis : 
+            # self.population = self.nouvelle_generation
+            # self.nouvelle_generation.clear()  
+            self.croisement_genetique()
+            self.mutation_genetique()
+            self.calcul_fitness_population()
+
+            print(f"\n-------------- AFFICHAGE NOUVELLE POPULATION GENERE A L ITERATION {iteration} ------------")
+            for i in range(len(self.population)):
+                print(self.population[i])
+                #self.affichage_tournee(self.population[i][1])
+            print("\n\n\n")
+
+            iteration += 1
+
+            # SELECTION pour recommencer le meme processus
 
 
+
+    def calcul_fitness_population(self):            # calcul le fitness de chaque individu de la population
+        for i in range(len(self.population)):
+            self.population[i][0] = self.calcul_fitness_d_une_solution(self.population[i][1])
+        
 
     def calcul_fitness_d_une_solution(self,planning_des_employees):         # compte de le nombre d'affectation
         nb_affectation_mission = 0
@@ -274,11 +293,16 @@ class Population :      # population composé d'ensemble de solution
         # self.nouvelle_generation.clear()   
 
         # affichage des la moitié de l'ancienne génération sélectionner dans la nouvelle generation
+
+        ''' 
         print("\n-------------- SELECTIONS DE 50% DE LA POPULATION PRECEDENTE AVANT CROISEMENT ENTRE CES DERNIERS ------------")
         for i in range(len(self.nouvelle_generation)):
             print(self.nouvelle_generation[i])
-            self.affichage_tournee(self.nouvelle_generation[i][1])
+            #self.affichage_tournee(self.nouvelle_generation[i][1])
         print("\n\n\n")
+        '''
+
+        
   
     def croisement_genetique(self):
 
@@ -322,20 +346,29 @@ class Population :      # population composé d'ensemble de solution
             # rajouter fin de tourner en cas d'ajout ect   
             
             #self.population.append([self.calcul_fitness_d_une_solution(planning_des_employees) ,planning_des_employees ])
-            self.population.append( [self.calcul_fitness_d_une_solution(fils1[1]) , fils1[1] ])           # nouvelle population généré à partir de la précèdente
-            self.population.append( [self.calcul_fitness_d_une_solution(fils2[1]) , fils2[1] ])
+
+            #self.population.append( [self.calcul_fitness_d_une_solution(fils1[1]) , fils1[1] ])           # nouvelle population généré à partir de la précèdente
+            #self.population.append( [self.calcul_fitness_d_une_solution(fils2[1]) , fils2[1] ])
+
+            self.population.append( [None , fils1[1] ])           # nouvelle population généré à partir de la précèdente
+            self.population.append( [None , fils2[1] ])
 
         self.nouvelle_generation.clear()  
         # AFFICHAGE DE la generation croisé , sans mutation encore
+
+        '''
         print("\n ------------ NOUVELLE GENERATION APRES CROISEMENT (SANS MUTATION ENCORE) --------------")
         for i in range(len(self.population)):
-            print(f"fitness = {self.population[i][0]}\n")
-            self.affichage_tournee(self.population[i][1])                              # pour afficher la tournee des nouvelles solutions généré
+            print(self.population[i])
+            #print(f"fitness = {self.population[i][0]}\n")
+            #self.affichage_tournee(self.population[i][1])                              # pour afficher la tournee des nouvelles solutions généré
         # croisement
+        '''
+
 
     def mutation_genetique(self):           # mutation de la population nouvellement crée après croisement avec une certaine probabilité de mutation
         #probabilite_mutation
-        nb_tentative_de_selection_mission = 10   # on tente de tirer jusqu'a n mission aléatoirement pour qu'elle ne soit pas déja affectée
+        nb_tentative_de_selection_mission = 30   # on tente de tirer jusqu'a n mission aléatoirement pour qu'elle ne soit pas déja affectée
 
         for individu in range(nb_individu):     # on parcourt chacune de solution pour essayer de leur affecter une nouvelle mission qu'elles n'ont pas déjà , c'est la mutation
             random_number = random.random()   # tirage d'un nombre entre 0 et 1
@@ -354,7 +387,7 @@ class Population :      # population composé d'ensemble de solution
 
                     if(self.population[individu][1].mission_deja_affecter(id_nouvelle_mission_a_affecter , jour_nouvelle_mission_a_affecter - 1 )   ==  False):  # si la mission tiré aléatoirement n'est pas déjà affecté a la solution
                         #n'est pas affecté à l'individu (c'est à dire au planning des employés de cette solution) alors on tente de la lui affecté
-                        print(f"id_mission_aléatoire qui n'est pas déjà affecté = {id_nouvelle_mission_a_affecter} à la solution {individu}")
+                        #print(f"id_mission_aléatoire qui n'est pas déjà affecté = {id_nouvelle_mission_a_affecter} à la solution {individu}")
 
                         competence_nouvelle_mission_a_affecter = donnees.missions.iat[id_nouvelle_mission_a_affecter-1, 4]
                         duree_nouvelle_mission_a_affecter = int (donnees.missions.iat[id_nouvelle_mission_a_affecter-1, 3] - donnees.missions.iat[id_nouvelle_mission_a_affecter-1, 2] / self.population[individu][1].intervalle_temps_planning)
@@ -362,7 +395,7 @@ class Population :      # population composé d'ensemble de solution
 
                         for id_employee in range(donnees.employees.shape[0]):       # on parcourt le planning de chaque employé au jour de la mission que l'on veut affecté pour voir s'il a du temps libre pour la réaliser, s c'est le cas on tente de la lui affecter
                             if(donnees.employees.iat[id_employee,2] == competence_nouvelle_mission_a_affecter):    # on regarde si sa compétence est la même que celle de la mission qu'on veut affectée
-                                print(f"la solution {individu} et l'employé {id_employee} à la bonne compétence pour la mission tiré aléatoirement {id_nouvelle_mission_a_affecter}")
+                                #print(f"la solution {individu} et l'employé {id_employee} à la bonne compétence pour la mission tiré aléatoirement {id_nouvelle_mission_a_affecter}")
                                 #print(f"TEST {self.population[individu][1].verification_7h_max_par_jour(id_employee , jour_nouvelle_mission_a_affecter  - 1 ,duree_nouvelle_mission_a_affecter, temps_trajet)}")
                                 #if(self.population[individu][1].verification_7h_max_par_jour(id_employee , jour_nouvelle_mission_a_affecter  - 1 ,duree_nouvelle_mission_a_affecter, temps_trajet) == True ) : 
 
@@ -381,11 +414,16 @@ class Population :      # population composé d'ensemble de solution
                     if(nouvelle_mission_affecte):
                         print(f"Mutation réussi : id_mission {id_nouvelle_mission_a_affecter} affecté à l'individu {individu}")
                     '''
+         
+        '''
         print("\n ------------ NOUVELLE GENERATION APRES MUTATION --------------")
         for i in range(len(self.population)):
             #print(f"fitness = {self.population[i][0]}\n")
-            self.affichage_tournee(self.population[i][1])                              # pour afficher la tournee des nouvelles solutions généré
+            print(self.population[i])
+            #self.affichage_tournee(self.population[i][1])                              # pour afficher la tournee des nouvelles solutions généré
             print("\n")
+        '''
+
 
 
 
