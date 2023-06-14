@@ -18,7 +18,7 @@ nb_jour_par_semaine = 5
 
 # paramètre algorithme génétique
 
-nb_individu = 20                   # nombre d'individu dans une population
+nb_individu = 8                   # nombre d'individu dans une population
 probabilite_mutation = 0.8
 nb_iteration_max = 8
 
@@ -181,10 +181,32 @@ class Population :      # population composé d'ensemble de solution
         print("\n\n\n")
         '''
 
+        
+        self.affichage_best_solution()
+        print(f" \n les missions non affectées à la meilleur solution trouvé sont : {self.best_solution[1].mission_non_affecter(0)}")
+
+
+    def affichage_best_solution(self):
+
         print(f"MEILLEUR SOLUTION = {self.best_solution}\n")
         print(f"la tournée de cette solution est : \n ")
         self.affichage_tournee(self.best_solution[1])
-        print(f" \n les missions non affectées à la meilleur solution trouvé sont : {self.best_solution[1].mission_non_affecter(0)}")
+
+        
+        #cout_distance = self.best_solution[0] - int(self.best_solution[0])
+        #chiffres_apres_virgule = "{:.5f}".format(self.best_solution[0])[-5:]        # récupère les 5 premiers chiffre après la virgule représentant le cout des distances
+        chiffres_apres_virgule = round(self.best_solution[0], 5)
+        cout_distance = chiffres_apres_virgule - int(self.best_solution[0]) - 1
+        cout_distance =  cout_distance * (-1) * 100000
+        print(f"\n cout des distances de la meilleur solution trouvé : {cout_distance} ")
+
+        nb_specialite_adequate = 0
+        for id_employe in range(donnees.employees.shape[0]):
+            for jour in range(nb_jour_par_semaine):
+                for mission in range(1 , len(self.best_solution[1].tournees_employees[id_employe][jour]) - 1 ):
+                    if(donnees.missions.iat[ self.best_solution[1].tournees_employees[id_employe][jour][mission] -1 , 5] == donnees.employees.iat[id_employe , 3 ]):
+                        nb_specialite_adequate += 1
+        print(f"\n nombre de spécialité d'employé correspond au mission : {nb_specialite_adequate}")
 
 
 
