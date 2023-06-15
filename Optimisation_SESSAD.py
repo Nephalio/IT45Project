@@ -464,17 +464,16 @@ class Population :      # population composé d'ensemble de solution
     
 
 
-class Employee :    # classe qui gère les contraintes des employées
-
-
+class Employee :    # classe qui gère les contraintes des employées et représente une solution
 
     def __init__(self,employee):
 
         # les missions peuvent commencer au plus tot à 7h du matin et finir au plus tard à 20h du soir
 
-        self.intervalle_temps_planning = 10     # le planning a des itnervalle de temps de 10 minutes
+        self.intervalle_temps_planning = 10     # le planning a des intervalle de temps de 10 minutes
         self.decoupage_horaire = int(60 / self.intervalle_temps_planning)                                  # chaque heure est découpe en 6 intervalle de 10 minute
-        self.amplitude_horaire_max_employee = 13*self.decoupage_horaire  # 13 = amplitude horaire max , il y a entre 7h et 20h qu'un employé peut avoir une mission, 1 heure est découpé en 6 intervalle de 10 minute
+        self.amplitude_horaire_max_employee = 13*self.decoupage_horaire  # 13 = amplitude horaire d'une journée , il n'y a qu'entre entre 7h et 20h qu'un employé peut avoir une mission, 
+                                                                            #1 heure est découpé en 6 intervalle de 10 minute
         self.nb_employee = employee.shape[0]
 
         # liste représentant le planning de chaque employé , 5 listes de 13 éléments représentant s'il est libre à une heure précise pour chaque employé , ce pour chaque employé
@@ -483,7 +482,8 @@ class Employee :    # classe qui gère les contraintes des employées
         self.employee_horaire = [ [ [0 for i in range(self.amplitude_horaire_max_employee)]  for j in range(nb_jour_par_semaine) ] for k in range(self.nb_employee) ]
 
         # construction de la liste de la tournée de chaque employé pour les 5 jours de la semaine qui commence et finit  sa tournée par son centre auquel il est affecté
-        self.tournees_employees = []        
+        self.tournees_employees = []     
+
         for i in range(self.nb_employee):   
             l = []  
             for j in range(nb_jour_par_semaine):
@@ -506,7 +506,7 @@ class Employee :    # classe qui gère les contraintes des employées
                     if(len(self.tournees_employees[id_employee][mission[1]-1 + 1]) > 2):     
                         premiere_mission_du_lendemain = self.tournees_employees[id_employee][mission[1]-1 + 1][1]       # on récupère l'id de la prochaine mission de l'employé sur la journée du lendemain de la mission qu'on veut ajouter
                         if( 1440 - mission[3] + donnees.missions.iat[premiere_mission_du_lendemain - 1 , 2] < (amplitude_horaire_max * 60) ):   # si le temps restant entre la fin de la mission du jour précèdent et 00:00 + le début de la première mission du lendemain est inférieur à 13h
-                            print(f"VERIF APRES : AMPLITUDE HORAIRE DE 13H NON RESPECTES car mission aujourdhui = {mission[3]} et mission demain = {donnees.missions.iat[premiere_mission_du_lendemain - 1 , 2]} ")
+                            #print(f"VERIF APRES : AMPLITUDE HORAIRE DE 13H NON RESPECTES car mission aujourdhui = {mission[3]} et mission demain = {donnees.missions.iat[premiere_mission_du_lendemain - 1 , 2]} ")
                             return False        
             elif(verifier_avant):
                 
@@ -514,7 +514,7 @@ class Employee :    # classe qui gère les contraintes des employées
                     if(len(self.tournees_employees[id_employee][mission[1]-1 - 1]) > 2):    
                         derniere_mission_du_jour_precedent = self.tournees_employees[id_employee][mission[1]-1 - 1][-2]       # on récupère l'id de la derniere mission de l'employé sur la journée de hier de la mission qu'on veut ajouter
                         if( mission[2]  + ( 1440 - donnees.missions.iat[derniere_mission_du_jour_precedent - 1 , 3]) < (amplitude_horaire_max * 60) ):   # si le temps restant entre la fin de la mission du jour précèdent et 00:00 + le début de la première mission du lendemain est inférieur à 13h
-                            print(f"VERIF AVANT AMPLITUDE HORAIRE DE 13H NON RESPECTES car mission aujourdhui = {mission[2]} et mission hier = {donnees.missions.iat[derniere_mission_du_jour_precedent - 1 , 3]} ")
+                            #print(f"VERIF AVANT AMPLITUDE HORAIRE DE 13H NON RESPECTES car mission aujourdhui = {mission[2]} et mission hier = {donnees.missions.iat[derniere_mission_du_jour_precedent - 1 , 3]} ")
                             return False  
                     
         else: # lorsque verifier_avant et verifier_apres sont vrais
@@ -522,13 +522,13 @@ class Employee :    # classe qui gère les contraintes des employées
                if(len(self.tournees_employees[id_employee][mission[1]-1 + 1]) > 2):     
                     premiere_mission_du_lendemain = self.tournees_employees[id_employee][mission[1]-1 + 1][1]       # on récupère l'id de la prochaine mission de l'employé sur la journée du lendemain de la mission qu'on veut ajouter
                     if( 1440 - mission[3] + donnees.missions.iat[premiere_mission_du_lendemain - 1 , 2] < (amplitude_horaire_max * 60) ):   # si le temps restant entre la fin de la mission du jour précèdent et 00:00 + le début de la première mission du lendemain est inférieur à 13h
-                        print(f"VERIF ENTRE AMPLITUDE HORAIRE DE 13H NON RESPECTES car mission aujourdhui = {mission[3]} et mission demain = {donnees.missions.iat[premiere_mission_du_lendemain - 1 , 2]} ")
+                        #print(f"VERIF ENTRE AMPLITUDE HORAIRE DE 13H NON RESPECTES car mission aujourdhui = {mission[3]} et mission demain = {donnees.missions.iat[premiere_mission_du_lendemain - 1 , 2]} ")
                         return False   
             if(mission[1] > 1):     # pas besoin de vérifier l'amplitude horaire si on est lundi car c'est le premier jour de la semaine
                 if(len(self.tournees_employees[id_employee][mission[1]-1 - 1]) > 2):    
                     derniere_mission_du_jour_precedent = self.tournees_employees[id_employee][mission[1]-1 - 1][-2]       # on récupère l'id de la derniere mission de l'employé sur la journée de hier de la mission qu'on veut ajouter
                     if( mission[2]  + ( 1440 - donnees.missions.iat[derniere_mission_du_jour_precedent - 1 , 3]) < (amplitude_horaire_max * 60) ):   # si le temps restant entre la fin de la mission du jour précèdent et 00:00 + le début de la première mission du lendemain est inférieur à 13h
-                        print(f"VERIF ENTRE AMPLITUDE HORAIRE DE 13H NON RESPECTES car mission aujourdhui = {mission[2]} et mission hier = {donnees.missions.iat[derniere_mission_du_jour_precedent - 1 , 2]} ")
+                        #print(f"VERIF ENTRE AMPLITUDE HORAIRE DE 13H NON RESPECTES car mission aujourdhui = {mission[2]} et mission hier = {donnees.missions.iat[derniere_mission_du_jour_precedent - 1 , 2]} ")
                         return False  
 
         return True
