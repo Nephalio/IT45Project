@@ -481,7 +481,7 @@ class Employee :    # classe qui gère les contraintes des employées et représ
         # liste représentant le planning de chaque employé , 5 listes de 13 éléments représentant s'il est libre à une heure précise pour chaque employé , ce pour chaque employé
         # ainsi self.employee_horaire[1] représente le planning sur la semaine de l'employée qui a l'id 2 , self.employee_horaire[1][1] est son planning du mardi 
         # si = 0 alors c'est une heure libre , si = 1 alors l'employee n'est pas libre
-        self.employee_horaire = [ [ [0 for i in range(self.amplitude_horaire_max_employee+20)]  for j in range(nb_jour_par_semaine) ] for k in range(self.nb_employee) ]
+        self.employee_horaire = [ [ [0 for i in range(self.amplitude_horaire_max_employee+5)]  for j in range(nb_jour_par_semaine) ] for k in range(self.nb_employee) ]
 
         # construction de la liste de la tournée de chaque employé pour les 5 jours de la semaine qui commence et finit  sa tournée par son centre auquel il est affecté
         self.tournees_employees = []     
