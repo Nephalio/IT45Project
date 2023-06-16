@@ -42,7 +42,7 @@ class Donnees :     # classe qui lit les fichiers et recenses les données du pr
         instances_directory = os.path.join(script_directory, "instances")
 
         # Construit le chemin vers le dossier "30Missions-2centres"
-        missions_directory = os.path.join(instances_directory, "94Missions-3centres")
+        missions_directory = os.path.join(instances_directory, "200Missions-2centres")
 
         # Construit les chemins vers les fichiers CSV
         centers_path = os.path.join(missions_directory, "centers.csv")
@@ -192,6 +192,7 @@ class Population :      # population composé d'ensemble de solution
         print(f"MEILLEUR SOLUTION = {self.best_solution}\n")
         print(f"la tournée de cette solution est : \n ")
         self.affichage_tournee(self.best_solution[1])
+        print(f"\n nombre de missions affectées de la meilleur solution {int(self.best_solution[0]) +1}")
 
         
         #cout_distance = self.best_solution[0] - int(self.best_solution[0])
@@ -199,7 +200,8 @@ class Population :      # population composé d'ensemble de solution
         chiffres_apres_virgule = round(self.best_solution[0], 5)
         cout_distance = chiffres_apres_virgule - int(self.best_solution[0]) - 1
         cout_distance =  cout_distance * (-1) * 100000
-        print(f"\n cout des distances de la meilleur solution trouvé : {cout_distance} ")
+        print(f"\n cout des distances de la meilleur solution trouvé en € : {cout_distance} ")
+        print(f"\n cout des distances de la meilleur solution trouvé en km : {cout_distance * 5} ")
 
         nb_specialite_adequate = 0
         for id_employe in range(donnees.employees.shape[0]):
@@ -547,6 +549,7 @@ class Employee :    # classe qui gère les contraintes des employées et représ
 
     def actualisation_planning_employee_apres_ajout_mission(self, id_employee , jour , temps_mission_et_trajet , index_time  ):
         for i in range(temps_mission_et_trajet):
+            #print(f"id = {id_employee} , jour = {jour} , index_time = {index_time}")
             self.employee_horaire[id_employee][jour][index_time] = 1                 # si un dans l'intervalle une case vaut 1 alors l'employé n'est pas disponible , mission[1] = date 
             index_time +=  1
 
